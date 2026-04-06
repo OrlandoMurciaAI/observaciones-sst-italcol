@@ -15,14 +15,21 @@ export interface ObservationData {
     barrerasC?: string;
     seguimiento?: string;
     firma?: string;
+    synced?: boolean; // New: tracking sync status
 }
 
 const STORAGE_KEY = 'sst_observations';
 
 export const saveObservationToLocal = (data: ObservationData) => {
     const existing = getObservationsFromLocal();
-    existing.push(data);
+    const newData = { ...data, synced: false };
+    existing.push(newData);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+    
+    // Attempt sync immediate if online
+    if (typeof window !== 'undefined' && navigator.onLine) {
+        syncPendingObservations();
+    }
 };
 
 export const getObservationsFromLocal = (): ObservationData[] => {
@@ -31,9 +38,42 @@ export const getObservationsFromLocal = (): ObservationData[] => {
     return stored ? JSON.parse(stored) : [];
 };
 
+// Simulated Sync Logic (Since we are bypassing Supabase for now)
+export const syncPendingObservations = async () => {
+    if (typeof window === 'undefined' || !navigator.onLine) return;
+
+    const observations = getObservationsFromLocal();
+    const pending = observations.filter(o => !o.synced);
+    
+    if (pending.length === 0) return;
+
+    console.log(`[OfflineSync] Intentando sincronizar ${pending.length} registros...`);
+
+    // Simulate API call
+    try {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Mark all as synced after successful simulation
+        const updated = observations.map(obs => ({ ...obs, synced: true }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        
+        console.log(`[OfflineSync] Sincronización exitosa.`);
+        
+        // Custom event to update UI
+        window.dispatchEvent(new CustomEvent('sst-synced'));
+    } catch (e) {
+        console.error('[OfflineSync] Error al sincronizar:', e);
+    }
+};
+
+// Initialize listeners for online status
+if (typeof window !== 'undefined') {
+    window.addEventListener('online', syncPendingObservations);
+}
+
 export const exportToCSV = (observations: ObservationData[]) => {
     const headers = [
-        'ID', 'Timestamp', 'Planta', 'Tarea', 'Observador', 'Fecha',
+        'ID', 'Timestamp', 'Sync Status', 'Planta', 'Tarea', 'Observador', 'Fecha',
         ...ATRIBUTOS_COMPORTAMIENTO.map(b => `[${b.id}] ${b.title} - Estado`),
         ...ATRIBUTOS_COMPORTAMIENTO.map(b => `[${b.id}] ${b.title} - Motivo`),
         ...ATRIBUTOS_COMPORTAMIENTO.map(b => `[${b.id}] ${b.title} - Clasificación`),
@@ -44,13 +84,13 @@ export const exportToCSV = (observations: ObservationData[]) => {
         const row = [
             obs.id,
             obs.timestamp,
+            obs.synced ? 'Enviado' : 'Pendiente',
             obs.planta,
             obs.tarea,
             obs.observador,
             obs.fecha,
         ];
 
-        // Respuestas
         ATRIBUTOS_COMPORTAMIENTO.forEach(b => {
             const resp = obs.respuestas[b.id] || { estado: 'no-aplica' };
             row.push(resp.estado);

@@ -19,12 +19,41 @@ import '../styles/globals.css';
                 <div class="logo-placeholder">IT</div>
                 <h1>Observaciones de Comportamiento</h1>
             </div>
-            <div class="status-badge flex items-center gap-sm">
+            <div class="status-badge flex items-center gap-sm" id="sync-status">
                 <span class="dot"></span>
-                <span>En Línea (Storage Local)</span>
+                <span id="status-text">Detectando conexión...</span>
             </div>
         </div>
     </header>
+
+    <script>
+        const updateStatus = () => {
+            const statusText = document.getElementById('status-text');
+            const dot = document.querySelector('.dot') as HTMLElement;
+            if (!statusText || !dot) return;
+
+            if (navigator.onLine) {
+                statusText.innerText = 'En Línea';
+                dot.style.backgroundColor = 'var(--color-safe)';
+                dot.style.boxShadow = '0 0 10px var(--color-safe)';
+            } else {
+                statusText.innerText = 'Modo Offline (Datos Protegidos)';
+                dot.style.backgroundColor = 'var(--color-warning)';
+                dot.style.boxShadow = '0 0 10px var(--color-warning)';
+            }
+        };
+
+        window.addEventListener('online', updateStatus);
+        window.addEventListener('offline', updateStatus);
+        window.addEventListener('sst-synced', () => {
+            const statusText = document.getElementById('status-text');
+            if (statusText) {
+                statusText.innerText = 'Sincronizado ✓';
+                setTimeout(updateStatus, 3000);
+            }
+        });
+        updateStatus();
+    </script>
 
     <main class="container">
         <div class="hero-intro">

@@ -8,9 +8,14 @@
   let isSubmitting = $state(false);
   let savedCount = $state(0);
 
-  // Initialize count
+  // Initialize count and listeners
   $effect(() => {
-    savedCount = getObservationsFromLocal().length;
+    const updateCount = () => {
+      savedCount = getObservationsFromLocal().length;
+    };
+    updateCount();
+    window.addEventListener('sst-synced', updateCount);
+    return () => window.removeEventListener('sst-synced', updateCount);
   });
 
   const handleSubmit = (e: SubmitEvent) => {
@@ -20,18 +25,15 @@
     // Build unique ID
     const observation = {
       ...formState,
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 9),
       timestamp: Date.now()
     };
 
     saveObservationToLocal(observation);
-    savedCount = getObservationsFromLocal().length;
     
-    setTimeout(() => {
-      alert('Observación guardada localmente con éxito.');
-      formState.reset();
-      isSubmitting = false;
-    }, 500);
+    // No alert, just feedback via reset and count
+    formState.reset();
+    isSubmitting = false;
   };
 
   const handleExport = () => {
