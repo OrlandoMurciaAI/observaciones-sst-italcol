@@ -336,9 +336,12 @@
   .summary-row {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
     margin-bottom: 0.75rem;
     border-bottom: 1px solid #e2e8f0;
     padding-bottom: 0.75rem;
+    flex-wrap: wrap;
   }
 
   .summary-row:last-child {
@@ -350,12 +353,37 @@
     font-weight: 600;
     color: #64748b;
     font-size: 0.85rem;
+    white-space: nowrap;
   }
 
   .summary-row .value {
     font-weight: 700;
     color: #1e293b;
     font-size: 0.9rem;
+    text-align: right;
+    word-break: break-word;
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .modal-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .modal-buttons .btn {
+    white-space: normal;
+    line-height: 1.2;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+    flex: 1;
+    min-width: 140px;
   }
 
   .stat-pills {
@@ -396,6 +424,7 @@
   .success-card {
     text-align: center;
     animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    padding: 2rem;
   }
 
   .check-circle {
@@ -428,6 +457,29 @@
   @media (max-width: 600px) {
     .row {
       flex-direction: column;
+    }
+    
+    .modal-content {
+      padding: 1.5rem;
+      max-width: 95vw;
+    }
+
+    .modal-buttons {
+      flex-direction: column-reverse;
+    }
+
+    .summary-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+
+    .stat-pills {
+      flex-direction: row; /* Keep pills side by side as they are small */
+    }
+
+    .success-card h2 {
+      font-size: 1.5rem;
     }
   }
 </style>
