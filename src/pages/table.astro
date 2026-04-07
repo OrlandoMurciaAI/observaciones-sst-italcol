@@ -1,0 +1,169 @@
+---
+import Navigation from '../components/Navigation.astro';
+import ObservationsTable from '../components/ObservationsTable.svelte';
+import '../styles/globals.css';
+
+// Server-side auth check
+const session = Astro.cookies.get('sst_session');
+if (!session) {
+    return Astro.redirect('/landing');
+}
+---
+
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <title>SST | Gestión de Datos - Italcol</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="app-header">
+        <div class="container flex justify-between items-center">
+            <div class="brand flex items-center gap-md">
+                <div class="logo">IT</div>
+                <div>
+                    <h1>Gestión de Observaciones</h1>
+                    <span class="user-info">Sesión Administrador</span>
+                </div>
+            </div>
+            
+            <div class="header-actions flex items-center gap-lg">
+                <Navigation currentPath="/table" />
+                <button id="logout-btn" class="logout-btn" title="Cerrar Sesión">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <script>
+        document.getElementById('logout-btn')?.addEventListener('click', async () => {
+            if(confirm('¿Está seguro de cerrar sesión?')) {
+                await fetch('/api/auth', { method: 'DELETE' });
+                window.location.href = '/landing';
+            }
+        });
+    </script>
+
+    <main class="container main-content">
+        <div class="page-header">
+            <p class="subtitle">ADMINISTRACIÓN DE SEGURIDAD</p>
+            <h2>Historial de Comportamiento</h2>
+        </div>
+
+        <ObservationsTable client:load />
+    </main>
+
+    <footer class="app-footer">
+        <div class="container">
+            <p>&copy; 2024 Italcol - Sistema de Gestión de SST - Área de Seguridad Industrial</p>
+        </div>
+    </footer>
+</body>
+</html>
+
+<style>
+    :root {
+        --color-primary: #1e293b;
+        --color-accent: #ff7a00;
+        --color-safe: #22c55e;
+        --color-warning: #f59e0b;
+        --color-white: #ffffff;
+        --color-border: #e2e8f0;
+    }
+
+    body {
+        background-color: #f8fafc;
+        font-family: 'Outfit', sans-serif;
+        color: var(--color-primary);
+        margin: 0;
+    }
+
+    .app-header {
+        background-color: white;
+        border-bottom: 1px solid var(--color-border);
+        padding: 1rem 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+
+    .logo {
+        background: var(--color-accent);
+        color: white;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 1.1rem;
+    }
+
+    h1 {
+        font-size: 1.1rem;
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .user-info {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .logout-btn {
+        background: none;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        padding: 4px;
+        transition: color 0.3s;
+    }
+
+    .logout-btn:hover {
+        color: #ef4444;
+    }
+
+    .main-content {
+        padding: 2rem 1rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .subtitle {
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: var(--color-accent);
+        letter-spacing: 2px;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-header h2 {
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin: 0;
+    }
+
+    .app-footer {
+        text-align: center;
+        padding: 2rem 0;
+        color: #64748b;
+        font-size: 0.85rem;
+        border-top: 1px solid var(--color-border);
+        background-color: white;
+        margin-top: 4rem;
+    }
+
+    @media (max-width: 600px) {
+        .user-info { display: none; }
+    }
+</style>

@@ -2,6 +2,22 @@
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
+## [1.3.0] - 2026-04-07
+### Añadido
+- **Migración a Supabase (PostgreSQL)**: Reemplazo total de la infraestructura de backend para mayor estabilidad y seguridad.
+- **Administrador de Registros SST**: Nueva página `/table` con filtros de fecha avanzados (optimización server-side).
+- **Editor Integral de Observaciones**: Interfaz para editar todas las respuestas, motivos de riesgo, clasificación y seguimiento de forma remota.
+- **Relaciones Geográficas**: Soporte para segmentación por plantas y observadores directamente en la base de datos distribuida.
+
+### Cambiado
+- **Refactorización de APIs**: Migración de rutas de MongoDB a Supabase con mapeo automático de campos (Inglés/Español).
+- **Controladores Svelte 5**: Migración completa de eventos `on:click` a `onclick` para compatibilidad nativa con Svelte 5.
+- **Astro Config**: Optimización de SSR para entornos Edge de Cloudflare y manejo de dependencias externas.
+
+### Corregido
+- **Persistencia de Filtros**: Los filtros de fecha ahora persisten entre recargas de página para mayor eficiencia del usuario.
+- **Mapeo de Datos**: Resolución del bug que causaba que la tabla apareciera vacía debido al desajuste de nombres de columnas en la base de datos.
+
 ## [1.2.0] - 2026-04-07
 ### Añadido
 - **Diseño Responsive del Dashboard**: Optimización completa para dispositivos móviles, tablets y escritorio.

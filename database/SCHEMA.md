@@ -1,53 +1,62 @@
-# Italcol SST - Estructura de Datos (MongoDB)
+# Italcol SST - Estructura de Datos (Supabase / Postgres)
 
-Este documento describe la estructura de las colecciones utilizadas en el sistema de Observaciones de Comportamiento de Italcol, optimizado para MongoDB.
+Este proyecto ha migrado de MongoDB a **Supabase (PostgreSQL)** para mejorar la compatibilidad con el entorno de ejecución de Cloudflare y simplificar la gestión de datos relacionales.
 
-Base de Datos: `sst_italcol`
+## 1. Tablas en Supabase
 
-## 1. Colección: `observations`
-Almacena los reportes completos de SST.
+### `observations`
+Almacena los reportes completos de SST recolectados en campo.
 
-| Campo | Tipo | Descripción |
+| Columna | Tipo | Descripción |
 | :--- | :--- | :--- |
-| `id` | `String` | Identificador único del reporte (Local ID). |
-| `timestamp` | `Number` | Marca de tiempo en milisegundos. |
-| `planta` | `String` | Nombre de la planta donde se realizó. |
-| `observador` | `String` | Nombre completo del observador. |
-| `tarea` | `String` | Descripción de la tarea observada. |
-| `fecha` | `String` | Fecha en formato `YYYY-MM-DD`. |
-| `respuestas` | `Object` | Diccionario de IDs de comportamiento y su estado. |
-| `barrerasC` | `String` | Texto libre sobre barreras de tipo C. |
-| `seguimiento`| `String` | Acciones tomadas tras el reporte. |
-| `synced` | `Boolean`| Estado de sincronía con la nube. |
+| `id` | `UUID` | Clave primaria autogenerada en base de datos. |
+| `local_id` | `Text` | Identificador único generado por el cliente (Unique). |
+| `timestamp` | `BigInt` | Marca de tiempo en milisegundos para ordenamiento. |
+| `planta` | `Text` | Nombre de la planta donde se realizó la observación. |
+| `observador` | `Text` | Nombre completo del observador. |
+| `tarea` | `Text` | Descripción de la tarea observada. |
+| `fecha` | `Date` | Fecha de la observación (YYYY-MM-DD). |
+| `respuestas` | `Jsonb` | Diccionario de IDs de comportamiento y sus estados. |
+| `barreras_c` | `Text` | Texto libre sobre barreras de tipo C. |
+| `seguimiento` | `Text` | Acciones tomadas tras el reporte. |
+| `synced` | `Boolean` | Estado de sincronía (siempre true si está en nube). |
+| `updated_at` | `Timestamptz` | Última modificación del registro. |
 
-## 2. Colección: `observers`
-Catálogo de observadores por planta para autocompletado inteligente.
+### `observers`
+Catálogo de observadores por planta para el autocompletado inteligente.
 
-| Campo | Tipo | Descripción |
+| Columna | Tipo | Descripción |
 | :--- | :--- | :--- |
-| `name` | `String` | Nombre completo (Unique por planta). |
-| `plant` | `String` | Nombre de la planta asociada. |
+| `name` | `Text` | Nombre completo del observador. |
+| `plant` | `Text` | Planta asociada. |
+| *Constraint* | `Unique` | `(name, plant)` evita duplicados. |
 
-## 3. Colección: `tasks`
-Historial de tareas registradas para selección rápida.
+### `tasks`
+Historial de tareas registradas para selección rápida en el formulario.
 
-| Campo | Tipo | Descripción |
+| Columna | Tipo | Descripción |
 | :--- | :--- | :--- |
-| `name` | `String` | Descripción de la tarea. |
-| `plant` | `String` | Planta asociada. |
+| `name` | `Text` | Descripción de la tarea. |
+| `plant` | `Text` | Planta asociada. |
+| *Constraint* | `Unique` | `(name, plant)` evita duplicados. |
 
-## 4. Índices Recomendados
-Para garantizar rapidez en la búsqueda y evitar duplicados en metadatos, se recomiendan los siguientes índices en el cluster:
+## 2. Aplicación de Cambios
+Los scripts de creación de tablas se encuentran en la carpeta `/database`:
+1.  [`00_init.sql`](./00_init.sql): Extensiones necesarias.
+2.  [`01_observations.sql`](./01_observations.sql): Estructura de reportes y políticas RLS (Admin Only para lectura/escritura).
+3.  [`02_observers.sql`](./02_observers.sql): Catálogo de personal.
+4.  [`03_tasks.sql`](./03_tasks.sql): Historial de actividades.
 
-```javascript
-// Único para evitar duplicar nombres en sugerencias
-db.observers.createIndex({ "name": 1, "plant": 1 }, { unique: true });
-db.tasks.createIndex({ "name": 1, "plant": 1 }, { unique: true });
-
-// Rápido para reportes por ID
-db.observations.createIndex({ "id": 1 });
-```
+Para aplicar cambios, ejecuta los scripts en orden en el **Editor SQL** de Supabase.
 
 ---
-> [!IMPORTANT]
-> El sistema utiliza inserciones con **Upsert** (`replaceOne` con `upsert: true`) para manejar la sincronización offline de forma segura sin generar duplicados.
+
+## 3. Seguridad (RLS)
+El sistema implementa **Row Level Security (RLS)** con los siguientes principios:
+-   **Público (Anon)**: Solo puede insertar registros (sincronizar desde planta) y leer catálogos (observers/tasks) para autocompletado. No tiene acceso de lectura a los reportes de otros.
+-   **Admin (Authenticated)**: Control total sobre todos los registros previo login con **Supabase Auth**.
+
+---
+
+## [Legacy] Documentación MongoDB
+*Histórico: Este proyecto utilizó MongoDB inicialmente. Los esquemas originales se conservan en `database/SCHEMA_MONGODB.md` (renombrado).*

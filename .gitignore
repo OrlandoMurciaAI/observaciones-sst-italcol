@@ -24,13 +24,10 @@ pnpm-debug.log*
 .idea/
 
 .agent/skills/ui-ux-pro-max
-<<<<<<< HEAD
-.wrangler/
-=======
+.playwright-mcp
 
 # wrangler files
 .wrangler
 .dev.vars*
 !.dev.vars.example
 !.env.example
->>>>>>> b8e24c1ac01762aa44a1f7b9917a750f88c4544d
