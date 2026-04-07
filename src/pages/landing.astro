@@ -1,5 +1,7 @@
 ---
 import '../styles/globals.css';
+const session = Astro.cookies.get('sst_session');
+const isAuthenticated = !!session;
 ---
 
 <html lang="es">
@@ -18,8 +20,12 @@ import '../styles/globals.css';
             <div class="logo">IT</div>
             <span class="brand-name">Italcol <span>SST</span></span>
         </div>
-        <a href="/login" class="login-link">Acceso Personal</a>
+        <div class="flex items-center gap-lg">
+            {isAuthenticated && <a href="/dashboard" class="login-link">Dashboard</a>}
+            <a href="/login" class="login-link">{isAuthenticated ? 'Mi Perfil' : 'Acceso Personal'}</a>
+        </div>
     </header>
+
 
     <main class="hero container flex flex-col items-center text-center">
         <div class="badge">Estandar de Seguridad Industrial</div>
@@ -27,7 +33,7 @@ import '../styles/globals.css';
         <p>Captura de datos robusta, diseñada para la planta y optimizada para operar en condiciones de baja conectividad.</p>
         
         <div class="cta-group flex gap-md">
-            <a href="/" class="btn btn-primary btn-lg">Iniciar Registro</a>
+            <a href={isAuthenticated ? "/" : "/login"} class="btn btn-primary btn-lg">Iniciar Registro</a>
             <a href="#features" class="btn btn-outline btn-lg">Saber más</a>
         </div>
 
@@ -41,7 +47,7 @@ import '../styles/globals.css';
                 <span class="label">Modo Offline</span>
             </div>
             <div class="stat-card">
-                <span class="number">实时</span>
+                <span class="number">💾</span>
                 <span class="label">Auto-guardado</span>
             </div>
         </div>
