@@ -15,14 +15,21 @@ export interface ObservationData {
     barrerasC?: string;
     seguimiento?: string;
     firma?: string;
+    synced?: boolean; // New: tracking sync status
 }
 
 const STORAGE_KEY = 'sst_observations';
 
 export const saveObservationToLocal = (data: ObservationData) => {
     const existing = getObservationsFromLocal();
-    existing.push(data);
+    const newData = { ...data, synced: false };
+    existing.push(newData);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+    
+    // Attempt sync immediate if online
+    if (typeof window !== 'undefined' && navigator.onLine) {
+        syncPendingObservations();
+    }
 };
 
 export const getObservationsFromLocal = (): ObservationData[] => {
@@ -31,9 +38,86 @@ export const getObservationsFromLocal = (): ObservationData[] => {
     return stored ? JSON.parse(stored) : [];
 };
 
+// Real Sync Logic with MongoDB
+export const syncPendingObservations = async () => {
+    if (typeof window === 'undefined' || !navigator.onLine) return;
+
+    const observations = getObservationsFromLocal();
+    const pending = observations.filter(o => !o.synced);
+    
+    if (pending.length === 0) {
+        console.log('[OfflineSync] No hay registros pendientes.');
+        return;
+    }
+
+    console.log(`[OfflineSync] Sincronizando ${pending.length} registros con MongoDB...`);
+
+    try {
+        // Enviar con synced: true para que en el cloud se guarde como tal
+        const observationsToSync = pending.map(obs => ({ ...obs, synced: true }));
+        
+        const response = await fetch('/api/sync', {
+            method: 'POST',
+            body: JSON.stringify({ observations: observationsToSync })
+        });
+
+        if (response.ok) {
+            console.log(`[OfflineSync] Servidor respondió OK. Actualizando metadatos...`);
+            
+            // Sync metadata
+            for (const obs of pending) {
+                if (obs.observador) await saveMetadata('observer', obs.observador, obs.planta);
+                if (obs.tarea) await saveMetadata('task', obs.tarea, obs.planta);
+            }
+
+            // Mark as synced locally
+            const updated = observations.map(obs => {
+                if (pending.find(p => p.id === obs.id)) return { ...obs, synced: true };
+                return obs;
+            });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+            
+            console.log(`[OfflineSync] Sincronización finalizada exitosamente.`);
+            window.dispatchEvent(new CustomEvent('sst-synced'));
+        } else {
+            const err = await response.json();
+            console.error('[OfflineSync] Error del servidor:', err);
+        }
+    } catch (e) {
+        console.error('[OfflineSync] Error de red al sincronizar:', e);
+    }
+};
+
+export const saveMetadata = async (type: 'observer' | 'task', name: string, plant: string) => {
+    if (!name || !plant) return;
+    try {
+        await fetch('/api/metadata', {
+            method: 'POST',
+            body: JSON.stringify({ type, name, plant })
+        });
+    } catch (e) {
+        // Silently fail metadata save if offline
+    }
+};
+
+export const getMetadataSuggestions = async (plant: string) => {
+    if (!plant || !navigator.onLine) return { observers: [], tasks: [] };
+    try {
+        const response = await fetch(`/api/metadata?plant=${encodeURIComponent(plant)}`);
+        if (response.ok) return await response.json();
+    } catch (e) {
+        return { observers: [], tasks: [] };
+    }
+};
+
+// Initialize listeners for online status
+if (typeof window !== 'undefined') {
+    window.addEventListener('online', syncPendingObservations);
+}
+
 export const exportToCSV = (observations: ObservationData[]) => {
     const headers = [
-        'ID', 'Timestamp', 'Planta', 'Tarea', 'Observador', 'Fecha',
+        'ID', 'Timestamp', 'Sync Status', 'Planta', 'Tarea', 'Observador', 'Fecha',
         ...ATRIBUTOS_COMPORTAMIENTO.map(b => `[${b.id}] ${b.title} - Estado`),
         ...ATRIBUTOS_COMPORTAMIENTO.map(b => `[${b.id}] ${b.title} - Motivo`),
         ...ATRIBUTOS_COMPORTAMIENTO.map(b => `[${b.id}] ${b.title} - Clasificación`),
@@ -44,13 +128,13 @@ export const exportToCSV = (observations: ObservationData[]) => {
         const row = [
             obs.id,
             obs.timestamp,
+            obs.synced ? 'Enviado' : 'Pendiente',
             obs.planta,
             obs.tarea,
             obs.observador,
             obs.fecha,
         ];
 
-        // Respuestas
         ATRIBUTOS_COMPORTAMIENTO.forEach(b => {
             const resp = obs.respuestas[b.id] || { estado: 'no-aplica' };
             row.push(resp.estado);

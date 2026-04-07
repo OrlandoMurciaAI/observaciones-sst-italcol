@@ -29,6 +29,7 @@
 
   <div class="actions flex gap-sm">
     <button 
+      type="button"
       class="btn btn-sm btn-safe" 
       class:active={respuesta.estado === 'seguro'} 
       onclick={() => setEstado('seguro')}
@@ -36,6 +37,7 @@
       Seguro
     </button>
     <button 
+      type="button"
       class="btn btn-sm btn-danger" 
       class:active={respuesta.estado === 'riesgoso'} 
       onclick={() => setEstado('riesgoso')}
@@ -43,6 +45,7 @@
       Riesgoso
     </button>
     <button 
+      type="button"
       class="btn btn-sm btn-secondary" 
       class:active={respuesta.estado === 'no-aplica'} 
       onclick={() => setEstado('no-aplica')}
@@ -63,6 +66,7 @@
       <label>Clasificación del Grado de Control:</label>
       <div class="clasificacion-group flex gap-sm">
         <button 
+          type="button"
           class="btn btn-sm btn-opt" 
           class:active={respuesta.clasificacion === 'A'} 
           onclick={() => setClasificacion('A')}
@@ -70,6 +74,7 @@
           A: Bajo su control
         </button>
         <button 
+          type="button"
           class="btn btn-sm btn-opt" 
           class:active={respuesta.clasificacion === 'B'} 
           onclick={() => setClasificacion('B')}
@@ -77,6 +82,7 @@
           B: Difícil control
         </button>
         <button 
+          type="button"
           class="btn btn-sm btn-opt" 
           class:active={respuesta.clasificacion === 'C'} 
           onclick={() => setClasificacion('C')}

@@ -1,5 +1,7 @@
+const SESSION_KEY = 'sst_current_session';
+
 export class ObservationFormState {
-    planta = $state('');
+    planta = $state('Planta Palermo');
     tarea = $state('');
     observador = $state('');
     fecha = $state(new Date().toISOString().split('T')[0]);
@@ -12,6 +14,32 @@ export class ObservationFormState {
     seguimiento = $state('');
     firma = $state('');
 
+    constructor() {
+        this.loadFromLocal();
+        
+        // Auto-save effect
+        if (typeof window !== 'undefined') {
+            $effect.root(() => {
+                $effect(() => {
+                    this.saveToLocal();
+                });
+            });
+        }
+    }
+
+    toJSON() {
+        return {
+            planta: this.planta,
+            tarea: this.tarea,
+            observador: this.observador,
+            fecha: this.fecha,
+            respuestas: $state.snapshot(this.respuestas),
+            barrerasC: this.barrerasC,
+            seguimiento: this.seguimiento,
+            firma: this.firma
+        };
+    }
+
     stats = $derived.by(() => {
         const resValues = Object.values(this.respuestas);
         const evaluated = resValues.filter(r => r.estado !== 'no-aplica');
@@ -21,8 +49,33 @@ export class ObservationFormState {
         return { total, seguros, porcentaje: Math.round(porcentaje) };
     });
 
+    saveToLocal() {
+        if (typeof window === 'undefined') return;
+        localStorage.setItem(SESSION_KEY, JSON.stringify(this.toJSON()));
+    }
+
+    loadFromLocal() {
+        if (typeof window === 'undefined') return;
+        const stored = localStorage.getItem(SESSION_KEY);
+        if (stored) {
+            try {
+                const data = JSON.parse(stored);
+                this.planta = data.planta || 'Planta Palermo';
+                this.tarea = data.tarea || '';
+                this.observador = data.observador || '';
+                this.fecha = data.fecha || new Date().toISOString().split('T')[0];
+                this.respuestas = data.respuestas || {};
+                this.barrerasC = data.barrerasC || '';
+                this.seguimiento = data.seguimiento || '';
+                this.firma = data.firma || '';
+            } catch (e) {
+                console.error('Error loading session:', e);
+            }
+        }
+    }
+
     reset() {
-        this.planta = '';
+        this.planta = 'Planta Palermo';
         this.tarea = '';
         this.observador = '';
         this.fecha = new Date().toISOString().split('T')[0];
@@ -30,6 +83,9 @@ export class ObservationFormState {
         this.barrerasC = '';
         this.seguimiento = '';
         this.firma = '';
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem(SESSION_KEY);
+        }
     }
 }
 

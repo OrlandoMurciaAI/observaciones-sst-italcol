@@ -1,6 +1,12 @@
 ---
 import ObservationForm from '../components/ObservationForm.svelte';
 import '../styles/globals.css';
+
+// Server-side auth check
+const session = Astro.cookies.get('sst_session');
+if (!session) {
+    return Astro.redirect('/landing');
+}
 ---
 
 <html lang="es">
@@ -9,26 +15,74 @@ import '../styles/globals.css';
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
-    <title>SST | Observaciones de Comportamiento - Italcol</title>
-    <meta name="description" content="Formato digital para la captura de observaciones de comportamiento en entornos industriales (SST). Bypassing Supabase for fast prototyping." />
+    <title>SST | Dashboard de Observaciones - Italcol</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <header class="app-header">
         <div class="container flex justify-between items-center">
             <div class="brand flex items-center gap-md">
-                <div class="logo-placeholder">IT</div>
-                <h1>Observaciones de Comportamiento</h1>
+                <div class="logo">IT</div>
+                <div>
+                    <h1>Observaciones de SST</h1>
+                    <span class="user-info">Sesión Administrador</span>
+                </div>
             </div>
-            <div class="status-badge flex items-center gap-sm">
-                <span class="dot"></span>
-                <span>En Línea (Storage Local)</span>
+            
+            <div class="header-actions flex items-center gap-lg">
+                <div class="status-badge flex items-center gap-sm" id="sync-status">
+                    <span class="dot"></span>
+                    <span id="status-text">Conectando...</span>
+                </div>
+                <button id="logout-btn" class="logout-btn" title="Cerrar Sesión">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
             </div>
         </div>
     </header>
 
-    <main class="container">
-        <div class="hero-intro">
-            <p>Registre las observaciones de seguridad basándose en los 17 puntos de comportamiento críticos para la operación de Italcol.</p>
+    <script>
+        // Auth Logic
+        document.getElementById('logout-btn')?.addEventListener('click', async () => {
+            if(confirm('¿Está seguro de cerrar sesión?')) {
+                await fetch('/api/auth', { method: 'DELETE' });
+                window.location.href = '/landing';
+            }
+        });
+
+        // Connectivity Logic
+        const updateStatus = () => {
+            const statusText = document.getElementById('status-text');
+            const dot = document.querySelector('.dot') as HTMLElement;
+            if (!statusText || !dot) return;
+
+            if (navigator.onLine) {
+                statusText.innerText = 'En Línea';
+                dot.style.backgroundColor = 'var(--color-safe)';
+                dot.style.boxShadow = '0 0 10px var(--color-safe)';
+            } else {
+                statusText.innerText = 'Modo Offline';
+                dot.style.backgroundColor = 'var(--color-warning)';
+                dot.style.boxShadow = '0 0 10px var(--color-warning)';
+            }
+        };
+
+        window.addEventListener('online', updateStatus);
+        window.addEventListener('offline', updateStatus);
+        window.addEventListener('sst-synced', () => {
+            const statusText = document.getElementById('status-text');
+            if (statusText) {
+                statusText.innerText = 'Sincronizado ✓';
+                setTimeout(updateStatus, 3000);
+            }
+        });
+        updateStatus();
+    </script>
+
+    <main class="container main-content">
+        <div class="form-header text-center">
+            <p class="subtitle">CAPTURA DE DATOS INDUSTRIALES</p>
+            <h2>Nueva Observación</h2>
         </div>
 
         <ObservationForm client:load />
@@ -43,41 +97,63 @@ import '../styles/globals.css';
 </html>
 
 <style>
-    .app-header {
-        background-color: var(--color-white);
-        border-bottom: 2px solid var(--color-border);
-        padding: var(--space-md) 0;
-        margin-bottom: var(--space-xl);
+    :root {
+        --color-primary: #1e293b;
+        --color-accent: #ff7a00;
+        --color-safe: #22c55e;
+        --color-warning: #f59e0b;
+        --color-white: #ffffff;
+        --color-border: #e2e8f0;
     }
 
-    .brand h1 {
-        font-size: 1.25rem;
-        margin: 0;
+    body {
+        background-color: #f8fafc;
+        font-family: 'Outfit', sans-serif;
         color: var(--color-primary);
-        letter-spacing: -0.5px;
+        margin: 0;
     }
 
-    .logo-placeholder {
-        background-color: var(--color-cta);
+    .app-header {
+        background-color: white;
+        border-bottom: 1px solid var(--color-border);
+        padding: 1rem 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+
+    .logo {
+        background: var(--color-accent);
         color: white;
         width: 36px;
         height: 36px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: var(--radius-md);
-        font-weight: 900;
-        font-size: 1.2rem;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 1.1rem;
+    }
+
+    h1 {
+        font-size: 1.1rem;
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .user-info {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-weight: 600;
     }
 
     .status-badge {
         font-size: 0.75rem;
         font-weight: 700;
-        color: var(--color-safe);
-        background-color: #f0fdf4;
-        padding: 4px 10px;
+        background-color: #f1f5f9;
+        padding: 4px 12px;
         border-radius: 20px;
-        border: 1px solid #dcfce7;
     }
 
     .dot {
@@ -85,24 +161,51 @@ import '../styles/globals.css';
         height: 8px;
         background-color: var(--color-safe);
         border-radius: 50%;
-        box-shadow: 0 0 10px var(--color-safe);
         animation: pulse 2s infinite;
     }
 
-    .hero-intro {
-        text-align: center;
-        max-width: 600px;
-        margin: 0 auto var(--space-2xl);
-        color: var(--color-secondary);
-        font-size: 1.1rem;
+    .logout-btn {
+        background: none;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        padding: 4px;
+        transition: color 0.3s;
+    }
+
+    .logout-btn:hover {
+        color: #ef4444;
+    }
+
+    .main-content {
+        padding: 3rem 1rem;
+    }
+
+    .form-header {
+        margin-bottom: 3rem;
+    }
+
+    .subtitle {
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: var(--color-accent);
+        letter-spacing: 2px;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-header h2 {
+        font-size: 2.25rem;
+        font-weight: 800;
+        letter-spacing: -1px;
     }
 
     .app-footer {
         text-align: center;
-        padding: var(--space-2xl) 0;
-        color: var(--color-secondary);
+        padding: 3rem 0;
+        color: #64748b;
         font-size: 0.85rem;
         border-top: 1px solid var(--color-border);
+        background-color: white;
     }
 
     @keyframes pulse {
@@ -112,11 +215,6 @@ import '../styles/globals.css';
     }
 
     @media (max-width: 600px) {
-        .brand h1 {
-            font-size: 1rem;
-        }
-        .status-badge {
-            display: none;
-        }
+        .user-info { display: none; }
     }
 </style>
