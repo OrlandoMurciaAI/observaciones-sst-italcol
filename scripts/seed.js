@@ -1,13 +1,22 @@
-import { MongoClient } from 'mongodb';
+import { createClient } from '@supabase/supabase-js';
 import dayjs from 'dayjs';
 import crypto from 'node:crypto';
+import * as dotenv from 'dotenv';
 
-// Use crypto.randomUUID() instead of uuidv4()
-const uuidv4 = () => crypto.randomUUID();
+dotenv.config();
 
 // Configuration
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/observaciones_sst";
-const DB_NAME = "observaciones_sst"; // Change to your actual db name if different
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error("Faltan variables de entorno: SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY");
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+const uuidv4 = () => crypto.randomUUID();
 
 const PLANTS = ['Planta Palermo', 'Planta Buga', 'Planta Cali'];
 const OBSERVERS = ['Carlos Mendoza', 'Patricia Rojas', 'Andrés Felipe', 'Sofía Gómez'];
@@ -30,118 +39,100 @@ const BEHAVIORS = [
 ];
 
 async function seed() {
-    const client = new MongoClient(MONGODB_URI);
+    console.log("Iniciando seeding en Supabase...");
 
-    try {
-        await client.connect();
-        console.log("Conectado a MongoDB...");
-        const db = client.db();
+    const observations = [];
+    const monthStart = dayjs('2026-03-01');
+    const monthEnd = dayjs('2026-03-31');
 
-        const observations = [];
-        const monthStart = dayjs('2026-03-01');
-        const monthEnd = dayjs('2026-03-31');
-
-        for (let i = 0; i < 100; i++) {
-            // Select random date in March
-            let date = monthStart.add(Math.floor(Math.random() * 31), 'day');
-            
-            // Bias towards weekdays
-            if (date.day() === 0 || date.day() === 6) {
-                if (Math.random() > 0.3) {
-                    date = date.add(1, 'day'); // Shift to Monday
-                    if (date.isAfter(monthEnd)) date = date.subtract(3, 'day');
-                }
+    for (let i = 0; i < 100; i++) {
+        let date = monthStart.add(Math.floor(Math.random() * 31), 'day');
+        
+        if (date.day() === 0 || date.day() === 6) {
+            if (Math.random() > 0.3) {
+                date = date.add(1, 'day');
+                if (date.isAfter(monthEnd)) date = date.subtract(3, 'day');
             }
-
-            // Time bias
-            const randTime = Math.random();
-            let hour;
-            if (randTime < 0.6) hour = Math.floor(Math.random() * 8) + 6; // Morning 6-14h
-            else if (randTime < 0.9) hour = Math.floor(Math.random() * 8) + 14; // Afternoon 14-22h
-            else hour = Math.floor(Math.random() * 8) + 22; // Night 22-06h
-
-            const minutes = Math.floor(Math.random() * 60).toString().padStart(2, '0');
-            const time = `${hour.toString().padStart(2, '0')}:${minutes}`;
-
-            const taskObj = TASKS[Math.floor(Math.random() * TASKS.length)];
-            const plant = PLANTS[Math.floor(Math.random() * PLANTS.length)];
-            const observer = OBSERVERS[Math.floor(Math.random() * OBSERVERS.length)];
-
-            const respuestas = {};
-            let hasRisk = false;
-            let isOutOfControl = false;
-
-            // Generate behavior responses
-            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].forEach(batchId => {
-                const rand = Math.random();
-                if (rand < 0.2) {
-                    respuestas[batchId] = { estado: 'no-aplica' };
-                } else if (rand < (taskObj.risk + 0.1)) {
-                    // Risk
-                    hasRisk = true;
-                    const behaviorDtl = BEHAVIORS.find(b => b.id === batchId);
-                    const motivo = behaviorDtl 
-                        ? behaviorDtl.reasons[Math.floor(Math.random() * behaviorDtl.reasons.length)]
-                        : "Condición no segura detectada";
-                    
-                    // Determine if Barrera C (out of control)
-                    const barrierC = Math.random() < 0.3; // 30% chance of systematic barrier if risky
-                    if (barrierC) isOutOfControl = true;
-
-                    respuestas[batchId] = {
-                        estado: 'riesgoso',
-                        clasificacion: barrierC ? 'C' : (Math.random() > 0.5 ? 'A' : 'B'),
-                        motivo: motivo
-                    };
-                } else {
-                    respuestas[batchId] = { estado: 'seguro' };
-                }
-            });
-
-            observations.push({
-                _id: uuidv4(),
-                fecha: date.format('YYYY-MM-DD'),
-                hora: time,
-                planta: plant,
-                observador: observer,
-                tarea: taskObj.name,
-                respuestas,
-                seguimiento: hasRisk ? "Se realiza retroalimentación inmediata." : "",
-                syncStatus: 'synced',
-                createdAt: new Date()
-            });
         }
 
+        const taskObj = TASKS[Math.floor(Math.random() * TASKS.length)];
+        const plant = PLANTS[Math.floor(Math.random() * PLANTS.length)];
+        const observer = OBSERVERS[Math.floor(Math.random() * OBSERVERS.length)];
+
+        const respuestas = {};
+        let hasRisk = false;
+        let barrerasCStr = "";
+
+        [1, 2, 8, 14, 12].forEach(batchId => {
+            const rand = Math.random();
+            if (rand < 0.2) {
+                respuestas[batchId] = { estado: 'no-aplica' };
+            } else if (rand < (taskObj.risk + 0.1)) {
+                hasRisk = true;
+                const behaviorDtl = BEHAVIORS.find(b => b.id === batchId);
+                const motivo = behaviorDtl 
+                    ? behaviorDtl.reasons[Math.floor(Math.random() * behaviorDtl.reasons.length)]
+                    : "Condición no segura detectada";
+                
+                const isBarrierC = Math.random() < 0.3;
+                if (isBarrierC) barrerasCStr += `${behaviorDtl?.title || 'Riesgo'}: ${motivo}. `;
+
+                respuestas[batchId] = {
+                    estado: 'riesgoso',
+                    clasificacion: isBarrierC ? 'C' : (Math.random() > 0.5 ? 'A' : 'B'),
+                    motivo: motivo
+                };
+            } else {
+                respuestas[batchId] = { estado: 'seguro' };
+            }
+        });
+
+        observations.push({
+            local_id: uuidv4(),
+            timestamp: date.valueOf(),
+            fecha: date.format('YYYY-MM-DD'),
+            planta: plant,
+            observador: observer,
+            tarea: taskObj.name,
+            respuestas,
+            barreras_c: barrerasCStr || null,
+            seguimiento: hasRisk ? "Se realiza retroalimentación inmediata." : "",
+            synced: true,
+            updated_at: new Date().toISOString()
+        });
+    }
+
+    try {
         // Insert Observations
-        await db.collection('observations').insertMany(observations);
+        const { error: obsError } = await supabase.from('observations').insert(observations);
+        if (obsError) throw obsError;
         console.log(`Insertados 100 registros en 'observations'.`);
 
-        // Seed Observers and Tasks
-        const observerDocs = OBSERVERS.map(name => ({
-            id: uuidv4(),
-            nombre: name,
-            planta: PLANTS[Math.floor(Math.random() * PLANTS.length)],
-            createdAt: new Date()
-        }));
+        // Seed Observers
+        const observerDocs = [];
+        PLANTS.forEach(plant => {
+            OBSERVERS.forEach(name => {
+                observerDocs.push({ name, plant });
+            });
+        });
 
+        await supabase.from('observers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const { error: obsDataError } = await supabase.from('observers').insert(observerDocs);
+        if (obsDataError) throw obsDataError;
+
+        // Seed Tasks
         const taskDocs = TASKS.map(t => ({
-            id: uuidv4(),
-            nombre: t.name,
-            lastUsed: new Date()
+            name: t.name,
+            plant: PLANTS[Math.floor(Math.random() * PLANTS.length)]
         }));
 
-        await db.collection('observers').deleteMany({});
-        await db.collection('observers').insertMany(observerDocs);
-        
-        await db.collection('tasks').deleteMany({});
-        await db.collection('tasks').insertMany(taskDocs);
+        await supabase.from('tasks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const { error: taskDataError } = await supabase.from('tasks').insert(taskDocs);
+        if (taskDataError) throw taskDataError;
 
-        console.log("Seeding completado con éxito.");
-
+        console.log("Seeding completado con éxito en Supabase.");
     } catch (error) {
-        console.error("Error en el seeding:", error);
-    } finally {
-        await client.close();
+        console.error("Error en el seeding:", error.message || error);
     }
 }
 

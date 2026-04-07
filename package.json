@@ -8,21 +8,31 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "preview": "npm run build && wrangler dev",
+    "astro": "astro",
+    "generate-types": "wrangler types",
+    "seed": "node scripts/seed.js",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.1.7",
     "@astrojs/svelte": "^8.0.4",
+    "@supabase/supabase-js": "^2.102.1",
     "astro": "^6.1.4",
     "chart.js": "^4.5.1",
     "dayjs": "^1.11.20",
+    "dotenv": "^17.4.1",
     "lucide-svelte": "^1.0.1",
     "mongodb": "^7.1.1",
+    "punycode": "^2.3.1",
     "svelte": "^5.55.1",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@types/node": "^25.5.2"
+    "@types/node": "^25.5.2",
+    "wrangler": "^4.80.0"
+  },
+  "overrides": {
+    "vite": "^7"
   }
 }

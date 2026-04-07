@@ -4,16 +4,17 @@
 Este proyecto es una aplicación web diseñada para la captura de observaciones de comportamiento en entornos industriales, específicamente para Italcol. El objetivo principal es recolectar datos sobre actos seguros y riesgosos en las plantas para prevenir accidentes y mejorar la cultura de seguridad.
 
 ### Arquitectura y Construcción
-- **Framework**: Astro 6.1.4 (SSR y estático).
+- **Framework**: Astro 6.x (SSR y estático).
 - **Frontend**: Svelte 5.x para la interactividad de los formularios.
-- **Base de Datos**: MongoDB (Atlas).
+- **Base de Datos**: Supabase (PostgreSQL).
 - **Estilos**: Vanilla CSS con variables globales y un enfoque en diseño premium y responsivo.
-- **Offline-First**: Implementa lógica de sincronización local (`localStorage`) que detecta automáticamente la conexión a internet para subir datos pendientes a la nube.
+- **Offline-First**: Implementa lógica de sincronización local (`localStorage`) que detecta automáticamente la conexión a internet para subir datos a Supabase.
 
-### Colecciones (MongoDB)
-1. **`observations`**: Contiene los reportes de comportamiento. Incluye planta, observador, tarea, fecha, respuestas detalladas por categoría y seguimiento.
-2. **`observers`**: Almacena nombres de observadores por planta para el autocompletado inteligente.
-3. **`tasks`**: Registra tareas previas para agilizar la captura de datos.
+### Base de Datos: Supabase (PostgreSQL)
+El sistema utiliza Supabase para garantizar estabilidad en entornos Edge.
+- **Gestión de Schema**: Todos los cambios de base de datos deben estar documentados en la carpeta `/database` mediante archivos `.sql` individuales y descriptivos (ej: `01_observations.sql`).
+- **Versionamiento**: Cada tabla o entidad mayor debe tener su propio script de inicialización que incluya su estructura, índices y políticas RLS.
+- **Políticas RLS**: Se aplica el principio de menor privilegio. Solo el rol `authenticated` tiene acceso completo, mientras que `anon` se limita a inserciones o lecturas públicas estrictas para el autocompletado.
 
 ---
 

@@ -7,7 +7,10 @@ const { currentPath } = Astro.props;
 <nav class="nav-links flex items-center gap-lg">
     <a href="/" class={`nav-link ${currentPath === '/' ? 'active' : ''}`}>Formulario</a>
     {isAuthenticated && (
-        <a href="/dashboard" class={`nav-link ${currentPath === '/dashboard' ? 'active' : ''}`}>Dashboard</a>
+        <>
+            <a href="/dashboard" class={`nav-link ${currentPath === '/dashboard' ? 'active' : ''}`}>Dashboard</a>
+            <a href="/table" class={`nav-link ${currentPath === '/table' ? 'active' : ''}`}>Tabla</a>
+        </>
     )}
 </nav>
 
