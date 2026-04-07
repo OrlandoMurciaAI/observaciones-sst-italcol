@@ -1,0 +1,43 @@
+---
+const session = Astro.cookies.get('sst_session');
+const isAuthenticated = !!session;
+const { currentPath } = Astro.props;
+---
+
+<nav class="nav-links flex items-center gap-lg">
+    <a href="/" class={`nav-link ${currentPath === '/' ? 'active' : ''}`}>Formulario</a>
+    {isAuthenticated && (
+        <a href="/dashboard" class={`nav-link ${currentPath === '/dashboard' ? 'active' : ''}`}>Dashboard</a>
+    )}
+</nav>
+
+<style>
+    .nav-links {
+        margin-right: var(--space-lg);
+    }
+
+    .nav-link {
+        text-decoration: none;
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+        padding: 0.5rem 0;
+        border-bottom: 2px solid transparent;
+    }
+
+    .nav-link:hover {
+        color: var(--color-cta);
+    }
+
+    .nav-link.active {
+        color: var(--color-primary);
+        border-bottom-color: var(--color-cta);
+    }
+
+    @media (max-width: 600px) {
+        .nav-links {
+            gap: var(--space-md);
+        }
+    }
+</style>

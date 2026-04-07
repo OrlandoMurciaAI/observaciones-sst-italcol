@@ -15,6 +15,7 @@ export class ObservationFormState {
     firma = $state('');
 
     constructor() {
+        this.resetInternal();
         this.loadFromLocal();
         
         // Auto-save effect
@@ -49,6 +50,23 @@ export class ObservationFormState {
         return { total, seguros, porcentaje: Math.round(porcentaje) };
     });
 
+    isValid() {
+        if (!this.tarea) return { valid: false, message: 'La tarea observada es obligatoria.' };
+        
+        const resValues = Object.entries(this.respuestas);
+        for (const [id, res] of resValues) {
+            if (res.estado === 'riesgoso') {
+                if (!res.clasificacion) {
+                    return { 
+                        valid: false, 
+                        message: `El comportamiento #${id} está marcado como riesgoso pero no tiene clasificación del control (A, B o C).` 
+                    };
+                }
+            }
+        }
+        return { valid: true };
+    }
+
     saveToLocal() {
         if (typeof window === 'undefined') return;
         localStorage.setItem(SESSION_KEY, JSON.stringify(this.toJSON()));
@@ -74,17 +92,24 @@ export class ObservationFormState {
         }
     }
 
-    reset() {
-        this.planta = 'Planta Palermo';
+    resetInternal() {
         this.tarea = '';
-        this.observador = '';
-        this.fecha = new Date().toISOString().split('T')[0];
-        this.respuestas = {};
         this.barrerasC = '';
         this.seguimiento = '';
         this.firma = '';
+        
+        // Poblamos con N/A por defecto
+        const defaultRespuestas: Record<number, any> = {};
+        for(let i=1; i<=17; i++) {
+            defaultRespuestas[i] = { estado: 'no-aplica' };
+        }
+        this.respuestas = defaultRespuestas;
+    }
+
+    reset() {
+        this.resetInternal();
         if (typeof window !== 'undefined') {
-            localStorage.removeItem(SESSION_KEY);
+            this.saveToLocal();
         }
     }
 }
