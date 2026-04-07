@@ -1,5 +1,5 @@
 ---
-import Dashboard from '../components/Dashboard.svelte';
+import DashboardView from '../components/Dashboard.svelte';
 import Navigation from '../components/Navigation.astro';
 import '../styles/globals.css';
 
@@ -49,7 +49,7 @@ if (!session) {
             </div>
         </div>
 
-        <Dashboard client:load />
+        <DashboardView client:load />
     </main>
 
     <footer class="app-footer">
@@ -114,9 +114,11 @@ if (!session) {
     }
 
     .user-info {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         color: #64748b;
         font-weight: 600;
+        display: block;
+        line-height: 1;
     }
 
     .logout-btn {
@@ -133,14 +135,18 @@ if (!session) {
     }
 
     .main-content {
-        padding: 3rem 1rem;
+        padding: 2rem var(--space-md);
     }
-
+    
+    @media (max-width: 640px) {
+        .main-content { padding: 1.5rem var(--space-sm); }
+    }
+    
     .dashboard-header {
-        margin-bottom: 3rem;
+        margin-bottom: 2rem;
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
+        gap: 0.5rem;
     }
 
     .subtitle {
@@ -153,9 +159,21 @@ if (!session) {
     }
 
     h2 {
-        font-size: 2.25rem;
+        font-size: 2rem;
         font-weight: 800;
         letter-spacing: -1px;
+        line-height: 1.1;
+    }
+
+    @media (max-width: 768px) {
+        h2 { font-size: 1.75rem; }
+        .app-header .container { padding: 0.75rem var(--space-md); }
+    }
+    
+    @media (max-width: 480px) {
+        h2 { font-size: 1.5rem; }
+        .brand .logo { width: 30px; height: 30px; font-size: 0.9rem; }
+        h1 { font-size: 0.95rem; }
     }
 
     .app-footer {
@@ -170,6 +188,7 @@ if (!session) {
 
     @media (max-width: 600px) {
         .user-info { display: none; }
-        h2 { font-size: 1.75rem; }
+        .app-header .container { flex-direction: column; gap: 1rem; align-items: flex-start; }
+        .header-actions { width: 100%; justify-content: space-between; }
     }
 </style>
