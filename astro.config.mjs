@@ -11,11 +11,7 @@ export default defineConfig({
     },
   }),
   integrations: [
-    svelte({
-      compilerOptions: {
-        runes: true // Forzar el uso de Svelte 5 Runes ($state, $derived, etc.)
-      }
-    })
+    svelte() // Svelte 5 detecta automáticamente el uso de Runes en cada componente.
   ],
   vite: {
     ssr: {
