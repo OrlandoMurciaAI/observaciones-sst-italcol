@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
     "name": "observaciones-sst-italcol",
     "compatibility_date": "2025-12-17",
     "compatibility_flags": [
@@ -16,4 +17,17 @@
     "observability": {
         "enabled": true
     }
+=======
+	"compatibility_date": "2026-04-07",
+	"compatibility_flags": ["global_fetch_strictly_public"],
+	"name": "shaky-star",
+	"main": "@astrojs/cloudflare/entrypoints/server",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS"
+	},
+	"observability": {
+		"enabled": true
+	}
+>>>>>>> b8e24c1ac01762aa44a1f7b9917a750f88c4544d
 }

@@ -8,11 +8,17 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "preview": "npm run build && wrangler dev",
+    "astro": "astro",
+    "generate-types": "wrangler types",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.1.7",
+<<<<<<< HEAD
+=======
+    "@astrojs/node": "^10.0.4",
+>>>>>>> b8e24c1ac01762aa44a1f7b9917a750f88c4544d
     "@astrojs/svelte": "^8.0.4",
     "astro": "^6.1.4",
     "chart.js": "^4.5.1",
@@ -23,6 +29,10 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@types/node": "^25.5.2"
+    "@types/node": "^25.5.2",
+    "wrangler": "^4.80.0"
+  },
+  "overrides": {
+    "vite": "^7"
   }
 }
