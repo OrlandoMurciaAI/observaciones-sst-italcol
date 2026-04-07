@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
-import { getSupabase } from '../../lib/supabase';
+import { getClient } from '../../lib/supabase';
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async ({ request, cookies, locals }) => {
   const accessToken = cookies.get('sst_session')?.value;
   if (!accessToken) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
@@ -29,7 +29,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       };
     });
 
-    const client = getSupabase(accessToken);
+    const env = (locals as any).runtime?.env;
+    const client = getClient(env);
+    
     const { data, error } = await client
       .from('observations')
       .upsert(rows, { onConflict: 'local_id' });

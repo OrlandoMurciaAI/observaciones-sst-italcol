@@ -1,47 +1,43 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase credentials not found in environment variables');
-}
-
-export const supabase = createClient(
-  supabaseUrl || '',
-  supabaseAnonKey || ''
-);
+// Intentamos obtener las variables de múltiples fuentes para máxima compatibilidad
+const supabaseUrl = import.meta.env.SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.SUPABASE_ANON_KEY || '';
 
 /**
- * Creates a Supabase client with an optional access token.
- * Use this in API routes to perform operations as the authenticated user.
+ * Cliente estático (para desarrollo local o cuando las variables de meta.env funcionan)
  */
-export function getSupabase(accessToken?: string) {
-    if (!accessToken) return supabase;
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+/**
+ * Crea o devuelve un cliente de Supabase basado en el entorno disponible.
+ * En Cloudflare Workers, es más fiable pasar el objeto 'env' de la plataforma.
+ */
+export function getClient(runtimeEnv?: any) {
+    const url = runtimeEnv?.SUPABASE_URL || supabaseUrl;
+    const key = runtimeEnv?.SUPABASE_ANON_KEY || supabaseAnonKey;
     
-    return createClient(
-        supabaseUrl || '',
-        supabaseAnonKey || '',
-        {
-            global: {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`
-                }
+    if (!url || !key) {
+        console.error('CRITICAL: Supabase credentials not found in any environment source');
+        // No lanzamos error aquí para evitar que el módulo falle al importar, 
+        // pero las llamadas posteriores fallarán con un mensaje claro.
+    }
+    
+    return createClient(url, key);
+}
+
+/**
+ * Crea un cliente con el token de acceso del usuario para operaciones con RLS.
+ */
+export function getAuthenticatedClient(accessToken: string, runtimeEnv?: any) {
+    const url = runtimeEnv?.SUPABASE_URL || supabaseUrl;
+    const key = runtimeEnv?.SUPABASE_ANON_KEY || supabaseAnonKey;
+
+    return createClient(url, key, {
+        global: {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
             }
         }
-    );
-}
-
-/**
- * Helper to handle Supabase errors in a consistent way
- */
-export async function handleSupabaseError(promise: Promise<any>) {
-  try {
-    const { data, error } = await promise;
-    if (error) throw error;
-    return data;
-  } catch (e: any) {
-    console.error('Supabase Error:', e.message || e);
-    throw e;
-  }
+    });
 }

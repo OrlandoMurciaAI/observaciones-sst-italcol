@@ -1,15 +1,16 @@
 import type { APIRoute } from 'astro';
-import { getSupabase } from '../../lib/supabase';
+import { getClient } from '../../lib/supabase';
 
-export const GET: APIRoute = async ({ request, cookies }) => {
-  const accessToken = cookies.get('sst_session')?.value;
-  if (!accessToken) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+export const GET: APIRoute = async ({ request, cookies, locals }) => {
+  const sessionToken = cookies.get('sst_session')?.value;
+  if (!sessionToken) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
   const url = new URL(request.url);
   const plant = url.searchParams.get('plant') || "";
 
   try {
-    const client = getSupabase(accessToken);
+    const env = (locals as any).runtime?.env;
+    const client = getClient(env);
     
     // Observers by plant
     const { data: observers, error: obsError } = await client
@@ -36,16 +37,18 @@ export const GET: APIRoute = async ({ request, cookies }) => {
   }
 };
 
-export const POST: APIRoute = async ({ request, cookies }) => {
-  const accessToken = cookies.get('sst_session')?.value;
-  if (!accessToken) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+export const POST: APIRoute = async ({ request, cookies, locals }) => {
+  const sessionToken = cookies.get('sst_session')?.value;
+  if (!sessionToken) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
   try {
     const { type, name, plant } = await request.json();
     if (!type || !name || !plant) return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
 
     const table = type === 'observer' ? "observers" : "tasks";
-    const client = getSupabase(accessToken);
+    
+    const env = (locals as any).runtime?.env;
+    const client = getClient(env);
 
     // Upsert to avoid duplicates
     const { error } = await client

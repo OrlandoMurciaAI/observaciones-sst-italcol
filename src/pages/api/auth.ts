@@ -1,65 +1,91 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../lib/supabase';
+import { getClient } from '../../lib/supabase';
 
-export const POST: APIRoute = async ({ request, cookies }) => {
-  const { email, password } = await request.json();
+export const POST: APIRoute = async ({ request, cookies, locals }) => {
+  try {
+    const rawData = await request.text();
+    if (!rawData) {
+        return new Response(JSON.stringify({ success: false, message: "Petición vacía" }), { status: 400 });
+    }
+    const { email, password } = JSON.parse(rawData);
 
-  if (!email || !password) {
-    return new Response(JSON.stringify({ success: false, message: "Email y contraseña requeridos" }), { status: 400 });
-  }
+    if (!email || !password) {
+      return new Response(JSON.stringify({ success: false, message: "Email y contraseña requeridos" }), { status: 400 });
+    }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) {
-    return new Response(JSON.stringify({ success: false, message: error.message }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  // Set session cookie
-  if (data.session) {
-    cookies.set('sst_session', data.session.access_token, {
-      path: '/',
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: data.session.expires_in
+    // Usamos el cliente con soporte para el runtime de Cloudflare
+    const env = (locals as any).runtime?.env;
+    const supabase = getClient(env);
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
     });
 
-    // Also set refresh token for longer lived sessions if needed
-    cookies.set('sst_refresh', data.session.refresh_token, {
+    if (error) {
+      console.error('Supabase Auth Error:', error.message);
+      return new Response(JSON.stringify({ success: false, message: error.message }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Set session cookie
+    if (data.session) {
+      cookies.set('sst_session', data.session.access_token, {
         path: '/',
         httpOnly: true,
         secure: true,
         sameSite: 'strict',
-        maxAge: 60 * 60 * 24 * 30 // 30 days
+        maxAge: data.session.expires_in
+      });
+
+      cookies.set('sst_refresh', data.session.refresh_token, {
+          path: '/',
+          httpOnly: true,
+          secure: true,
+          sameSite: 'strict',
+          maxAge: 60 * 60 * 24 * 30 // 30 days
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (e: any) {
+    console.error('Server Internal Error:', e);
+    return new Response(JSON.stringify({ 
+        success: false, 
+        message: "Error interno en el servidor de autentificación",
+        details: e.message 
+    }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
     });
   }
-
-  return new Response(JSON.stringify({ success: true }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
 };
 
 export const GET: APIRoute = async ({ cookies }) => {
   const session = cookies.get('sst_session');
-  // Simple check: if we have a token, we consider authenticated for the UI
-  // The API routes will verify the token with Supabase for real security
   return new Response(JSON.stringify({ authenticated: !!session }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' }
   });
 };
 
-export const DELETE: APIRoute = async ({ cookies }) => {
-  await supabase.auth.signOut();
+export const DELETE: APIRoute = async ({ cookies, locals }) => {
+  try {
+    const env = (locals as any).runtime?.env;
+    const supabase = getClient(env);
+    await supabase.auth.signOut();
+  } catch (e) {
+    // Si falla el sign out en el servidor, igualmente borramos las cookies localmente
+  }
+  
   cookies.delete('sst_session', { path: '/' });
   cookies.delete('sst_refresh', { path: '/' });
+  
   return new Response(JSON.stringify({ success: true }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' }

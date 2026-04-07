@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
-import { getSupabase } from '../../lib/supabase';
+import { getClient } from '../../lib/supabase';
+import dayjs from 'dayjs';
 
-export const GET: APIRoute = async ({ cookies, url }) => {
+export const GET: APIRoute = async ({ cookies, url, locals }) => {
   const accessToken = cookies.get('sst_session')?.value;
   if (!accessToken) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
@@ -11,15 +12,16 @@ export const GET: APIRoute = async ({ cookies, url }) => {
   const endDate = url.searchParams.get('to');
 
   try {
-    const client = getSupabase(accessToken);
-    let query = client
+    const env = (locals as any).runtime?.env;
+    const client = getClient(env);
+    
+    // Si queremos actuar como el usuario autenticado (RLS)
+    const { data: rawObservations, error } = await client
       .from('observations')
-      .select('*');
-    
-    if (startDate) query = query.gte('fecha', startDate);
-    if (endDate) query = query.lte('fecha', endDate);
-    
-    const { data: rawObservations, error } = await query.order('timestamp', { ascending: false });
+      .select('*', { count: 'exact' })
+      .gte('fecha', startDate || dayjs().format('YYYY-MM-DD'))
+      .lte('fecha', endDate || dayjs().format('YYYY-MM-DD'))
+      .order('timestamp', { ascending: false });
 
     if (error) throw error;
 
@@ -47,7 +49,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
   }
 };
 
-export const PATCH: APIRoute = async ({ request, cookies }) => {
+export const PATCH: APIRoute = async ({ request, cookies, locals }) => {
   const accessToken = cookies.get('sst_session')?.value;
   if (!accessToken) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
@@ -69,7 +71,9 @@ export const PATCH: APIRoute = async ({ request, cookies }) => {
         updated_at: new Date().toISOString() 
     };
 
-    const client = getSupabase(accessToken);
+    const env = (locals as any).runtime?.env;
+    const client = getClient(env);
+    
     const { error } = await client
       .from('observations')
       .update(payload)
@@ -84,7 +88,7 @@ export const PATCH: APIRoute = async ({ request, cookies }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ request, cookies }) => {
+export const DELETE: APIRoute = async ({ request, cookies, locals }) => {
   const accessToken = cookies.get('sst_session')?.value;
   if (!accessToken) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
@@ -94,7 +98,9 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     const { id } = await request.json();
     if (!id) return new Response(JSON.stringify({ error: "Missing ID" }), { status: 400 });
 
-    const client = getSupabase(accessToken);
+    const env = (locals as any).runtime?.env;
+    const client = getClient(env);
+    
     const { error } = await client
       .from('observations')
       .delete()
