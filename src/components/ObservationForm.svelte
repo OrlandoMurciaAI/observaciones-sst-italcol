@@ -3,10 +3,12 @@
   import { ATRIBUTOS_COMPORTAMIENTO } from '../constants/behaviors';
   import BehaviorItem from './BehaviorItem.svelte';
   import SummaryCalculator from './SummaryCalculator.svelte';
-  import { saveObservationToLocal, exportToCSV, getObservationsFromLocal } from '../lib/storage';
+  import { saveObservationToLocal, exportToCSV, getObservationsFromLocal, getMetadataSuggestions } from '../lib/storage';
+  import SmartInput from './SmartInput.svelte';
 
   let isSubmitting = $state(false);
   let savedCount = $state(0);
+  let suggestions = $state<{ observers: string[], tasks: string[] }>({ observers: [], tasks: [] });
 
   // Initialize count and listeners
   $effect(() => {
@@ -16,6 +18,17 @@
     updateCount();
     window.addEventListener('sst-synced', updateCount);
     return () => window.removeEventListener('sst-synced', updateCount);
+  });
+
+  // Fetch suggestions when plant changes
+  $effect(() => {
+    const fetchSuggestions = async () => {
+        if (formState.planta) {
+            const data = await getMetadataSuggestions(formState.planta);
+            if (data) suggestions = data;
+        }
+    };
+    fetchSuggestions();
   });
 
   const handleSubmit = (e: SubmitEvent) => {
@@ -47,6 +60,12 @@
 </script>
 
 <form onsubmit={handleSubmit} class="observation-form">
+  <!-- Session Status -->
+  <div class="session-status flex items-center gap-sm">
+    <div class="save-dot"></div>
+    <span>Progreso guardado automáticamente en este dispositivo</span>
+  </div>
+
   <!-- Header Info -->
   <section class="section card header-info grid gap-md">
     <div class="row flex gap-md wrap">
@@ -54,6 +73,7 @@
         <label for="planta">Planta / Bodega:</label>
         <select id="planta" bind:value={formState.planta} required>
             <option value="" disabled selected>Seleccione planta...</option>
+            <option value="Planta Palermo">Planta Palermo</option>
             <option value="Planta Sabaneta">Planta Sabaneta</option>
             <option value="Planta Itagüí">Planta Itagüí</option>
             <option value="Planta Buca">Planta Bucaramanga</option>
@@ -68,11 +88,11 @@
     <div class="row flex gap-md wrap">
       <div class="field flex-1">
         <label for="observador">Observador:</label>
-        <input type="text" id="observador" placeholder="Nombre completo" bind:value={formState.observador} required />
+        <SmartInput id="observador" placeholder="Nombre completo" bind:value={formState.observador} options={suggestions.observers} />
       </div>
       <div class="field flex-1">
         <label for="tarea">Tarea Observada:</label>
-        <input type="text" id="tarea" placeholder="Ej: Cargue de bultos" bind:value={formState.tarea} required />
+        <SmartInput id="tarea" placeholder="Ej: Cargue de bultos" bind:value={formState.tarea} options={suggestions.tasks} />
       </div>
     </div>
   </section>
@@ -115,6 +135,24 @@
     max-width: 800px;
     margin: 0 auto;
     padding-bottom: 4rem;
+  }
+
+  .session-status {
+    background: #f0fdf4;
+    color: #166534;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: var(--space-md);
+    border: 1px solid #dcfce7;
+  }
+
+  .save-dot {
+    width: 6px;
+    height: 6px;
+    background: #22c55e;
+    border-radius: 50%;
   }
 
   .section {

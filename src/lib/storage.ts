@@ -38,7 +38,7 @@ export const getObservationsFromLocal = (): ObservationData[] => {
     return stored ? JSON.parse(stored) : [];
 };
 
-// Simulated Sync Logic (Since we are bypassing Supabase for now)
+// Real Sync Logic with MongoDB
 export const syncPendingObservations = async () => {
     if (typeof window === 'undefined' || !navigator.onLine) return;
 
@@ -47,22 +47,55 @@ export const syncPendingObservations = async () => {
     
     if (pending.length === 0) return;
 
-    console.log(`[OfflineSync] Intentando sincronizar ${pending.length} registros...`);
+    console.log(`[OfflineSync] Sincronizando ${pending.length} registros con MongoDB...`);
 
-    // Simulate API call
     try {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Mark all as synced after successful simulation
-        const updated = observations.map(obs => ({ ...obs, synced: true }));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        
-        console.log(`[OfflineSync] Sincronización exitosa.`);
-        
-        // Custom event to update UI
-        window.dispatchEvent(new CustomEvent('sst-synced'));
+        const response = await fetch('/api/sync', {
+            method: 'POST',
+            body: JSON.stringify({ observations: pending })
+        });
+
+        if (response.ok) {
+            // Also sync metadata for each observation
+            for (const obs of pending) {
+                await saveMetadata('observer', obs.observador, obs.planta);
+                await saveMetadata('task', obs.tarea, obs.planta);
+            }
+
+            // Mark as synced locally
+            const updated = observations.map(obs => {
+                if (pending.find(p => p.id === obs.id)) return { ...obs, synced: true };
+                return obs;
+            });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+            
+            console.log(`[OfflineSync] Sincronización exitosa.`);
+            window.dispatchEvent(new CustomEvent('sst-synced'));
+        }
     } catch (e) {
         console.error('[OfflineSync] Error al sincronizar:', e);
+    }
+};
+
+export const saveMetadata = async (type: 'observer' | 'task', name: string, plant: string) => {
+    if (!name || !plant) return;
+    try {
+        await fetch('/api/metadata', {
+            method: 'POST',
+            body: JSON.stringify({ type, name, plant })
+        });
+    } catch (e) {
+        // Silently fail metadata save if offline
+    }
+};
+
+export const getMetadataSuggestions = async (plant: string) => {
+    if (!plant || !navigator.onLine) return { observers: [], tasks: [] };
+    try {
+        const response = await fetch(`/api/metadata?plant=${encodeURIComponent(plant)}`);
+        if (response.ok) return await response.json();
+    } catch (e) {
+        return { observers: [], tasks: [] };
     }
 };
 
