@@ -18,11 +18,26 @@ export class ObservationFormState {
         this.loadFromLocal();
         
         // Auto-save effect
-        $effect.root(() => {
-            $effect(() => {
-                this.saveToLocal();
+        if (typeof window !== 'undefined') {
+            $effect.root(() => {
+                $effect(() => {
+                    this.saveToLocal();
+                });
             });
-        });
+        }
+    }
+
+    toJSON() {
+        return {
+            planta: this.planta,
+            tarea: this.tarea,
+            observador: this.observador,
+            fecha: this.fecha,
+            respuestas: $state.snapshot(this.respuestas),
+            barrerasC: this.barrerasC,
+            seguimiento: this.seguimiento,
+            firma: this.firma
+        };
     }
 
     stats = $derived.by(() => {
@@ -36,17 +51,7 @@ export class ObservationFormState {
 
     saveToLocal() {
         if (typeof window === 'undefined') return;
-        const data = {
-            planta: this.planta,
-            tarea: this.tarea,
-            observador: this.observador,
-            fecha: this.fecha,
-            respuestas: this.respuestas,
-            barrerasC: this.barrerasC,
-            seguimiento: this.seguimiento,
-            firma: this.firma
-        };
-        localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+        localStorage.setItem(SESSION_KEY, JSON.stringify(this.toJSON()));
     }
 
     loadFromLocal() {
