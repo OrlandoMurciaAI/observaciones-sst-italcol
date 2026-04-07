@@ -24,6 +24,7 @@ pnpm-debug.log*
 .idea/
 
 .agent/skills/ui-ux-pro-max
+.playwright-mcp
 
 # wrangler files
 .wrangler

@@ -1,59 +1,65 @@
 import type { APIRoute } from 'astro';
-import clientPromise from '../../lib/mongodb';
+import { getClient } from '../../lib/supabase';
 
-export const GET: APIRoute = async ({ request, cookies }) => {
-  const session = cookies.get('sst_session');
-  if (!session) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+export const GET: APIRoute = async ({ request, cookies, locals }) => {
+  const sessionToken = cookies.get('sst_session')?.value;
+  if (!sessionToken) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
   const url = new URL(request.url);
   const plant = url.searchParams.get('plant') || "";
 
   try {
-    const client = await clientPromise;
-    const db = client.db("sst_italcol");
+    const env = (locals as any).runtime?.env;
+    const client = getClient(env);
     
     // Observers by plant
-    const observers = await db.collection("observers")
-      .find({ plant })
-      .project({ name: 1, _id: 0 })
-      .toArray();
+    const { data: observers, error: obsError } = await client
+      .from('observers')
+      .select('name')
+      .eq('plant', plant);
 
     // Tasks by plant
-    const tasks = await db.collection("tasks")
-      .find({ plant })
-      .project({ name: 1, _id: 0 })
-      .toArray();
+    const { data: tasks, error: taskError } = await client
+      .from('tasks')
+      .select('name')
+      .eq('plant', plant);
+
+    if (obsError) throw obsError;
+    if (taskError) throw taskError;
 
     return new Response(JSON.stringify({ 
-      observers: observers.map(o => o.name), 
-      tasks: tasks.map(t => t.name) 
+      observers: (observers || []).map((o: any) => o.name), 
+      tasks: (tasks || []).map((t: any) => t.name) 
     }), { status: 200 });
   } catch (e: any) {
+    console.error('Metadata fetch error:', e);
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 };
 
-export const POST: APIRoute = async ({ request, cookies }) => {
-  const session = cookies.get('sst_session');
-  if (!session) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+export const POST: APIRoute = async ({ request, cookies, locals }) => {
+  const sessionToken = cookies.get('sst_session')?.value;
+  if (!sessionToken) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
   try {
     const { type, name, plant } = await request.json();
     if (!type || !name || !plant) return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
 
-    const client = await clientPromise;
-    const db = client.db("sst_italcol");
-    const collection = type === 'observer' ? db.collection("observers") : db.collection("tasks");
+    const table = type === 'observer' ? "observers" : "tasks";
+    
+    const env = (locals as any).runtime?.env;
+    const client = getClient(env);
 
     // Upsert to avoid duplicates
-    await collection.updateOne(
-        { name, plant },
-        { $set: { name, plant } },
-        { upsert: true }
-    );
+    const { error } = await client
+        .from(table)
+        .upsert({ name, plant }, { onConflict: 'name,plant' });
+
+    if (error) throw error;
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (e: any) {
+    console.error('Metadata POST error:', e);
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 };

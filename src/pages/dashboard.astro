@@ -1,12 +1,12 @@
 ---
-import ObservationForm from '../components/ObservationForm.svelte';
+import DashboardView from '../components/Dashboard.svelte';
 import Navigation from '../components/Navigation.astro';
 import '../styles/globals.css';
 
 // Server-side auth check
 const session = Astro.cookies.get('sst_session');
 if (!session) {
-    return Astro.redirect('/landing');
+    return Astro.redirect('/login');
 }
 ---
 
@@ -16,27 +16,24 @@ if (!session) {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
-    <title>SST | Dashboard de Observaciones - Italcol</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>SST | Dashboard de Análisis - Italcol</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <header class="app-header">
         <div class="container flex justify-between items-center">
             <div class="brand flex items-center gap-md">
-                <div class="logo">IT</div>
-                <div>
-                    <h1>Observaciones de SST</h1>
-                    <span class="user-info">Sesión Administrador</span>
-                </div>
+                <a href="/" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: inherit;">
+                    <div class="logo">IT</div>
+                    <div>
+                        <h1>Panel de Inteligencia SST</h1>
+                        <span class="user-info">Administrador de Datos</span>
+                    </div>
+                </a>
             </div>
             
             <div class="header-actions flex items-center gap-lg">
-                <Navigation currentPath="/" />
-                <div class="status-badge flex items-center gap-sm" id="sync-status">
-
-                    <span class="dot"></span>
-                    <span id="status-text">Conectando...</span>
-                </div>
+                <Navigation currentPath="/dashboard" />
                 <button id="logout-btn" class="logout-btn" title="Cerrar Sesión">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 </button>
@@ -44,51 +41,15 @@ if (!session) {
         </div>
     </header>
 
-    <script>
-        // Auth Logic
-        document.getElementById('logout-btn')?.addEventListener('click', async () => {
-            if(confirm('¿Está seguro de cerrar sesión?')) {
-                await fetch('/api/auth', { method: 'DELETE' });
-                window.location.href = '/landing';
-            }
-        });
-
-        // Connectivity Logic
-        const updateStatus = () => {
-            const statusText = document.getElementById('status-text');
-            const dot = document.querySelector('.dot') as HTMLElement;
-            if (!statusText || !dot) return;
-
-            if (navigator.onLine) {
-                statusText.innerText = 'En Línea';
-                dot.style.backgroundColor = 'var(--color-safe)';
-                dot.style.boxShadow = '0 0 10px var(--color-safe)';
-            } else {
-                statusText.innerText = 'Modo Offline';
-                dot.style.backgroundColor = 'var(--color-warning)';
-                dot.style.boxShadow = '0 0 10px var(--color-warning)';
-            }
-        };
-
-        window.addEventListener('online', updateStatus);
-        window.addEventListener('offline', updateStatus);
-        window.addEventListener('sst-synced', () => {
-            const statusText = document.getElementById('status-text');
-            if (statusText) {
-                statusText.innerText = 'Sincronizado ✓';
-                setTimeout(updateStatus, 3000);
-            }
-        });
-        updateStatus();
-    </script>
-
     <main class="container main-content">
-        <div class="form-header text-center">
-            <p class="subtitle">CAPTURA DE DATOS INDUSTRIALES</p>
-            <h2>Nueva Observación</h2>
+        <div class="dashboard-header">
+            <div class="text">
+                <p class="subtitle">ANÁLISIS PREVENTIVO</p>
+                <h2>Métricas de Desempeño</h2>
+            </div>
         </div>
 
-        <ObservationForm client:load />
+        <DashboardView client:load />
     </main>
 
     <footer class="app-footer">
@@ -96,6 +57,15 @@ if (!session) {
             <p>&copy; 2024 Italcol - Sistema de Gestión de SST - Área de Seguridad Industrial</p>
         </div>
     </footer>
+
+    <script>
+        document.getElementById('logout-btn')?.addEventListener('click', async () => {
+            if(confirm('¿Está seguro de cerrar sesión?')) {
+                await fetch('/api/auth', { method: 'DELETE' });
+                window.location.href = '/landing';
+            }
+        });
+    </script>
 </body>
 </html>
 
@@ -103,15 +73,12 @@ if (!session) {
     :root {
         --color-primary: #1e293b;
         --color-accent: #ff7a00;
-        --color-safe: #22c55e;
-        --color-warning: #f59e0b;
-        --color-white: #ffffff;
         --color-border: #e2e8f0;
     }
 
     body {
         background-color: #f8fafc;
-        font-family: 'Outfit', sans-serif;
+        font-family: 'Inter', sans-serif;
         color: var(--color-primary);
         margin: 0;
     }
@@ -143,28 +110,15 @@ if (!session) {
         font-size: 1.1rem;
         margin: 0;
         font-weight: 700;
+        font-family: 'Outfit', sans-serif;
     }
 
     .user-info {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         color: #64748b;
         font-weight: 600;
-    }
-
-    .status-badge {
-        font-size: 0.75rem;
-        font-weight: 700;
-        background-color: #f1f5f9;
-        padding: 4px 12px;
-        border-radius: 20px;
-    }
-
-    .dot {
-        width: 8px;
-        height: 8px;
-        background-color: var(--color-safe);
-        border-radius: 50%;
-        animation: pulse 2s infinite;
+        display: block;
+        line-height: 1;
     }
 
     .logout-btn {
@@ -181,11 +135,18 @@ if (!session) {
     }
 
     .main-content {
-        padding: 3rem 1rem;
+        padding: 2rem var(--space-md);
     }
-
-    .form-header {
-        margin-bottom: 3rem;
+    
+    @media (max-width: 640px) {
+        .main-content { padding: 1.5rem var(--space-sm); }
+    }
+    
+    .dashboard-header {
+        margin-bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
     }
 
     .subtitle {
@@ -194,12 +155,25 @@ if (!session) {
         color: var(--color-accent);
         letter-spacing: 2px;
         margin-bottom: 0.5rem;
+        font-family: 'Outfit', sans-serif;
     }
 
-    .form-header h2 {
-        font-size: 2.25rem;
+    h2 {
+        font-size: 2rem;
         font-weight: 800;
         letter-spacing: -1px;
+        line-height: 1.1;
+    }
+
+    @media (max-width: 768px) {
+        h2 { font-size: 1.75rem; }
+        .app-header .container { padding: 0.75rem var(--space-md); }
+    }
+    
+    @media (max-width: 480px) {
+        h2 { font-size: 1.5rem; }
+        .brand .logo { width: 30px; height: 30px; font-size: 0.9rem; }
+        h1 { font-size: 0.95rem; }
     }
 
     .app-footer {
@@ -209,15 +183,12 @@ if (!session) {
         font-size: 0.85rem;
         border-top: 1px solid var(--color-border);
         background-color: white;
-    }
-
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
+        margin-top: 4rem;
     }
 
     @media (max-width: 600px) {
         .user-info { display: none; }
+        .app-header .container { flex-direction: column; gap: 1rem; align-items: flex-start; }
+        .header-actions { width: 100%; justify-content: space-between; }
     }
 </style>

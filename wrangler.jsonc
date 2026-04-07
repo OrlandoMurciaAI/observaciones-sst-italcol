@@ -1,13 +1,22 @@
 {
-	"compatibility_date": "2026-04-07",
-	"compatibility_flags": ["global_fetch_strictly_public"],
-	"name": "shaky-star",
-	"main": "@astrojs/cloudflare/entrypoints/server",
-	"assets": {
-		"directory": "./dist",
-		"binding": "ASSETS"
-	},
-	"observability": {
-		"enabled": true
-	}
+    "name": "observaciones-sst-italcol",
+    "compatibility_date": "2026-04-07",
+    "compatibility_flags": [
+        "global_fetch_strictly_public",
+        "nodejs_compat"
+    ],
+    "main": "@astrojs/cloudflare/entrypoints/server",
+    "assets": {
+        "directory": "./dist",
+        "binding": "ASSETS"
+    },
+    "kv_namespaces": [
+        {
+            "binding": "SESSION",
+            "id": "524aa5460ae4481c9e9d1ff1192de20d"
+        }
+    ],
+    "observability": {
+        "enabled": true
+    }
 }

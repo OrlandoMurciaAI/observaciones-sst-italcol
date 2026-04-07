@@ -1,6 +1,6 @@
 ---
-import ObservationForm from '../components/ObservationForm.svelte';
 import Navigation from '../components/Navigation.astro';
+import ObservationsTable from '../components/ObservationsTable.svelte';
 import '../styles/globals.css';
 
 // Server-side auth check
@@ -16,7 +16,7 @@ if (!session) {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
-    <title>SST | Dashboard de Observaciones - Italcol</title>
+    <title>SST | Gestión de Datos - Italcol</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -25,18 +25,13 @@ if (!session) {
             <div class="brand flex items-center gap-md">
                 <div class="logo">IT</div>
                 <div>
-                    <h1>Observaciones de SST</h1>
+                    <h1>Gestión de Observaciones</h1>
                     <span class="user-info">Sesión Administrador</span>
                 </div>
             </div>
             
             <div class="header-actions flex items-center gap-lg">
-                <Navigation currentPath="/" />
-                <div class="status-badge flex items-center gap-sm" id="sync-status">
-
-                    <span class="dot"></span>
-                    <span id="status-text">Conectando...</span>
-                </div>
+                <Navigation currentPath="/table" />
                 <button id="logout-btn" class="logout-btn" title="Cerrar Sesión">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 </button>
@@ -45,50 +40,21 @@ if (!session) {
     </header>
 
     <script>
-        // Auth Logic
         document.getElementById('logout-btn')?.addEventListener('click', async () => {
             if(confirm('¿Está seguro de cerrar sesión?')) {
                 await fetch('/api/auth', { method: 'DELETE' });
                 window.location.href = '/landing';
             }
         });
-
-        // Connectivity Logic
-        const updateStatus = () => {
-            const statusText = document.getElementById('status-text');
-            const dot = document.querySelector('.dot') as HTMLElement;
-            if (!statusText || !dot) return;
-
-            if (navigator.onLine) {
-                statusText.innerText = 'En Línea';
-                dot.style.backgroundColor = 'var(--color-safe)';
-                dot.style.boxShadow = '0 0 10px var(--color-safe)';
-            } else {
-                statusText.innerText = 'Modo Offline';
-                dot.style.backgroundColor = 'var(--color-warning)';
-                dot.style.boxShadow = '0 0 10px var(--color-warning)';
-            }
-        };
-
-        window.addEventListener('online', updateStatus);
-        window.addEventListener('offline', updateStatus);
-        window.addEventListener('sst-synced', () => {
-            const statusText = document.getElementById('status-text');
-            if (statusText) {
-                statusText.innerText = 'Sincronizado ✓';
-                setTimeout(updateStatus, 3000);
-            }
-        });
-        updateStatus();
     </script>
 
     <main class="container main-content">
-        <div class="form-header text-center">
-            <p class="subtitle">CAPTURA DE DATOS INDUSTRIALES</p>
-            <h2>Nueva Observación</h2>
+        <div class="page-header">
+            <p class="subtitle">ADMINISTRACIÓN DE SEGURIDAD</p>
+            <h2>Historial de Comportamiento</h2>
         </div>
 
-        <ObservationForm client:load />
+        <ObservationsTable client:load />
     </main>
 
     <footer class="app-footer">
@@ -151,22 +117,6 @@ if (!session) {
         font-weight: 600;
     }
 
-    .status-badge {
-        font-size: 0.75rem;
-        font-weight: 700;
-        background-color: #f1f5f9;
-        padding: 4px 12px;
-        border-radius: 20px;
-    }
-
-    .dot {
-        width: 8px;
-        height: 8px;
-        background-color: var(--color-safe);
-        border-radius: 50%;
-        animation: pulse 2s infinite;
-    }
-
     .logout-btn {
         background: none;
         border: none;
@@ -181,11 +131,11 @@ if (!session) {
     }
 
     .main-content {
-        padding: 3rem 1rem;
+        padding: 2rem 1rem;
     }
 
-    .form-header {
-        margin-bottom: 3rem;
+    .page-header {
+        margin-bottom: 2rem;
     }
 
     .subtitle {
@@ -196,25 +146,21 @@ if (!session) {
         margin-bottom: 0.5rem;
     }
 
-    .form-header h2 {
-        font-size: 2.25rem;
+    .page-header h2 {
+        font-size: 1.75rem;
         font-weight: 800;
-        letter-spacing: -1px;
+        letter-spacing: -0.5px;
+        margin: 0;
     }
 
     .app-footer {
         text-align: center;
-        padding: 3rem 0;
+        padding: 2rem 0;
         color: #64748b;
         font-size: 0.85rem;
         border-top: 1px solid var(--color-border);
         background-color: white;
-    }
-
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
+        margin-top: 4rem;
     }
 
     @media (max-width: 600px) {
