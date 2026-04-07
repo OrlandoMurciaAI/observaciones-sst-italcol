@@ -35,9 +35,9 @@
     e.preventDefault();
     isSubmitting = true;
 
-    // Build unique ID
+    // Build observation data correctly
     const observation = {
-      ...formState,
+      ...formState.toJSON(),
       id: Math.random().toString(36).substring(2, 9),
       timestamp: Date.now()
     };
@@ -149,10 +149,17 @@
   }
 
   .save-dot {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     background: #22c55e;
     border-radius: 50%;
+    animation: pulsate 2s infinite;
+  }
+
+  @keyframes pulsate {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
   }
 
   .section {

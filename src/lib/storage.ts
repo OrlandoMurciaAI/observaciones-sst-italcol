@@ -45,21 +45,29 @@ export const syncPendingObservations = async () => {
     const observations = getObservationsFromLocal();
     const pending = observations.filter(o => !o.synced);
     
-    if (pending.length === 0) return;
+    if (pending.length === 0) {
+        console.log('[OfflineSync] No hay registros pendientes.');
+        return;
+    }
 
     console.log(`[OfflineSync] Sincronizando ${pending.length} registros con MongoDB...`);
 
     try {
+        // Enviar con synced: true para que en el cloud se guarde como tal
+        const observationsToSync = pending.map(obs => ({ ...obs, synced: true }));
+        
         const response = await fetch('/api/sync', {
             method: 'POST',
-            body: JSON.stringify({ observations: pending })
+            body: JSON.stringify({ observations: observationsToSync })
         });
 
         if (response.ok) {
-            // Also sync metadata for each observation
+            console.log(`[OfflineSync] Servidor respondió OK. Actualizando metadatos...`);
+            
+            // Sync metadata
             for (const obs of pending) {
-                await saveMetadata('observer', obs.observador, obs.planta);
-                await saveMetadata('task', obs.tarea, obs.planta);
+                if (obs.observador) await saveMetadata('observer', obs.observador, obs.planta);
+                if (obs.tarea) await saveMetadata('task', obs.tarea, obs.planta);
             }
 
             // Mark as synced locally
@@ -69,11 +77,14 @@ export const syncPendingObservations = async () => {
             });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
             
-            console.log(`[OfflineSync] Sincronización exitosa.`);
+            console.log(`[OfflineSync] Sincronización finalizada exitosamente.`);
             window.dispatchEvent(new CustomEvent('sst-synced'));
+        } else {
+            const err = await response.json();
+            console.error('[OfflineSync] Error del servidor:', err);
         }
     } catch (e) {
-        console.error('[OfflineSync] Error al sincronizar:', e);
+        console.error('[OfflineSync] Error de red al sincronizar:', e);
     }
 };
 
