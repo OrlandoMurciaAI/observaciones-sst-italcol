@@ -13,6 +13,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  * Crea o devuelve un cliente de Supabase basado en el entorno disponible.
  * En Cloudflare Workers, es más fiable pasar el objeto 'env' de la plataforma.
  */
+export async function getSafeEnv() {
+    try {
+        // @ts-ignore
+        const cfWorkers = await import('cloudflare:workers');
+        return cfWorkers.env;
+    } catch {
+        return undefined;
+    }
+}
+
 export function getClient(runtimeEnv?: any) {
     const url = runtimeEnv?.SUPABASE_URL || supabaseUrl;
     const key = runtimeEnv?.SUPABASE_ANON_KEY || supabaseAnonKey;

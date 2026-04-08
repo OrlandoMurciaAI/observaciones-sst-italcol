@@ -16,7 +16,19 @@ CREATE INDEX IF NOT EXISTS idx_tasks_plant ON tasks(plant);
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
 -- Políticas
--- El público puede leer para el autocompletado si fuese necesario
-CREATE POLICY "Public Read Tasks" ON tasks FOR SELECT TO anon USING (true);
--- Solo trabajadores registrados pueden registrar nuevas tareas
-CREATE POLICY "Admin Full Tasks" ON tasks FOR ALL TO authenticated USING (true);
+-- 1. Acceso total solo para Administradores Autenticados
+DROP POLICY IF EXISTS "Admin Full Tasks" ON tasks;
+DROP POLICY IF EXISTS "Public View Tasks" ON tasks;
+
+CREATE POLICY "Admin Full Tasks" ON tasks 
+    FOR ALL 
+    TO authenticated 
+    USING (true) 
+    WITH CHECK (true);
+
+-- Permisos base
+GRANT ALL ON TABLE tasks TO authenticated;
+GRANT ALL ON TABLE tasks TO service_role;
+
+
+

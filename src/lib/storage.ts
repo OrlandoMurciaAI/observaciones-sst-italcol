@@ -3,11 +3,11 @@ import { ATRIBUTOS_COMPORTAMIENTO } from '../constants/behaviors';
 export interface ObservationData {
     id: string;
     timestamp: number;
-    planta: string;
-    tarea: string;
-    observador: string;
+    plant: string;
+    task: string;
+    observer: string;
     fecha: string;
-    respuestas: Record<number, {
+    responses: Record<number, {
         estado: 'seguro' | 'riesgoso' | 'no-aplica',
         motivo?: string,
         clasificacion?: 'A' | 'B' | 'C'
@@ -38,7 +38,7 @@ export const getObservationsFromLocal = (): ObservationData[] => {
     return stored ? JSON.parse(stored) : [];
 };
 
-// Real Sync Logic with MongoDB
+// Real Sync Logic with Supabase
 export const syncPendingObservations = async () => {
     if (typeof window === 'undefined' || !navigator.onLine) return;
 
@@ -50,7 +50,7 @@ export const syncPendingObservations = async () => {
         return;
     }
 
-    console.log(`[OfflineSync] Sincronizando ${pending.length} registros con MongoDB...`);
+    console.log(`[OfflineSync] Sincronizando ${pending.length} registros con Supabase...`);
 
     try {
         // Enviar con synced: true para que en el cloud se guarde como tal
@@ -66,8 +66,8 @@ export const syncPendingObservations = async () => {
             
             // Sync metadata
             for (const obs of pending) {
-                if (obs.observador) await saveMetadata('observer', obs.observador, obs.planta);
-                if (obs.tarea) await saveMetadata('task', obs.tarea, obs.planta);
+                if (obs.observer) await saveMetadata('observer', obs.observer, obs.plant);
+                if (obs.task) await saveMetadata('task', obs.task, obs.plant);
             }
 
             // Mark as synced locally
@@ -129,22 +129,22 @@ export const exportToCSV = (observations: ObservationData[]) => {
             obs.id,
             obs.timestamp,
             obs.synced ? 'Enviado' : 'Pendiente',
-            obs.planta,
-            obs.tarea,
-            obs.observador,
+            obs.plant,
+            obs.task,
+            obs.observer,
             obs.fecha,
         ];
 
         ATRIBUTOS_COMPORTAMIENTO.forEach(b => {
-            const resp = obs.respuestas[b.id] || { estado: 'no-aplica' };
+            const resp = (obs.responses || {})[b.id] || { estado: 'no-aplica' };
             row.push(resp.estado);
         });
         ATRIBUTOS_COMPORTAMIENTO.forEach(b => {
-            const resp = obs.respuestas[b.id] || {};
+            const resp = (obs.responses || {})[b.id] || {};
             row.push(resp.motivo || '');
         });
         ATRIBUTOS_COMPORTAMIENTO.forEach(b => {
-            const resp = obs.respuestas[b.id] || {};
+            const resp = (obs.responses || {})[b.id] || {};
             row.push(resp.clasificacion || '');
         });
 

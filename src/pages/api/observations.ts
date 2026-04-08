@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getClient } from '../../lib/supabase';
+import { getClient, getAuthenticatedClient, getSafeEnv } from '../../lib/supabase';
 import dayjs from 'dayjs';
 
 export const GET: APIRoute = async ({ cookies, url, locals }) => {
@@ -12,16 +12,22 @@ export const GET: APIRoute = async ({ cookies, url, locals }) => {
   const endDate = url.searchParams.get('to');
 
   try {
-    const env = (locals as any).runtime?.env;
-    const client = getClient(env);
+    const envData = await getSafeEnv();
+    const client = getAuthenticatedClient(accessToken, envData);
     
-    // Si queremos actuar como el usuario autenticado (RLS)
-    const { data: rawObservations, error } = await client
+    let query = client
       .from('observations')
-      .select('*', { count: 'exact' })
-      .gte('fecha', startDate || dayjs().format('YYYY-MM-DD'))
-      .lte('fecha', endDate || dayjs().format('YYYY-MM-DD'))
-      .order('timestamp', { ascending: false });
+      .select('*', { count: 'exact' });
+
+    if (startDate) query = query.gte('fecha', startDate);
+    if (endDate) query = query.lte('fecha', endDate);
+    
+    // Si no hay fechas, devolver los últimos días (p.ej. 30) por defecto para que no salga vacío
+    if (!startDate && !endDate) {
+      query = query.gte('fecha', dayjs().subtract(1, 'month').format('YYYY-MM-DD'));
+    }
+
+    const { data: rawObservations, error } = await query.order('timestamp', { ascending: false });
 
     if (error) throw error;
 
@@ -71,8 +77,8 @@ export const PATCH: APIRoute = async ({ request, cookies, locals }) => {
         updated_at: new Date().toISOString() 
     };
 
-    const env = (locals as any).runtime?.env;
-    const client = getClient(env);
+    const envData = await getSafeEnv();
+    const client = getAuthenticatedClient(accessToken, envData);
     
     const { error } = await client
       .from('observations')
@@ -98,8 +104,8 @@ export const DELETE: APIRoute = async ({ request, cookies, locals }) => {
     const { id } = await request.json();
     if (!id) return new Response(JSON.stringify({ error: "Missing ID" }), { status: 400 });
 
-    const env = (locals as any).runtime?.env;
-    const client = getClient(env);
+    const envData = await getSafeEnv();
+    const client = getAuthenticatedClient(accessToken, envData);
     
     const { error } = await client
       .from('observations')

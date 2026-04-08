@@ -5,18 +5,18 @@
   const { behavior } = $props<{ behavior: Behavior }>();
 
   // Ensure answer exists in state
-  if (!formState.respuestas[behavior.id]) {
-    formState.respuestas[behavior.id] = { estado: 'no-aplica' };
+  if (!formState.responses[behavior.id]) {
+    formState.responses[behavior.id] = { estado: 'no-aplica' };
   }
 
-  const respuesta = $derived(formState.respuestas[behavior.id]);
+  const respuesta = $derived(formState.responses[behavior.id]);
 
   const setEstado = (estado: 'seguro' | 'riesgoso' | 'no-aplica') => {
-    formState.respuestas[behavior.id].estado = estado;
+    formState.responses[behavior.id].estado = estado;
   };
 
   const setClasificacion = (clasificacion: 'A' | 'B' | 'C') => {
-    formState.respuestas[behavior.id].clasificacion = clasificacion;
+    formState.responses[behavior.id].clasificacion = clasificacion;
   };
 </script>
 
@@ -60,7 +60,7 @@
       <textarea 
         id="motivo-{behavior.id}" 
         placeholder="Describa el motivo..." 
-        bind:value={formState.respuestas[behavior.id].motivo}
+        bind:value={formState.responses[behavior.id].motivo}
       ></textarea>
 
       <label>Clasificación del Grado de Control:</label>

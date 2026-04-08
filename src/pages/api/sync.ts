@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getClient } from '../../lib/supabase';
+import { getClient, getAuthenticatedClient, getSafeEnv } from '../../lib/supabase';
 
 export const POST: APIRoute = async ({ request, cookies, locals }) => {
   const accessToken = cookies.get('sst_session')?.value;
@@ -29,8 +29,8 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
       };
     });
 
-    const env = (locals as any).runtime?.env;
-    const client = getClient(env);
+    const envData = await getSafeEnv();
+    const client = getAuthenticatedClient(accessToken, envData);
     
     const { data, error } = await client
       .from('observations')
