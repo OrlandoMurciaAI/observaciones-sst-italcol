@@ -1,36 +1,36 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Intentamos obtener las variables de múltiples fuentes para máxima compatibilidad
-const supabaseUrl = import.meta.env.SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.SUPABASE_ANON_KEY || '';
+/**
+ * Obtiene las variables de entorno de varias fuentes posibles.
+ * En Astro con Cloudflare, priorizamos el objeto runtime.env proporcionado por el adaptador.
+ */
+function getKeys(runtimeEnv?: any) {
+    // 1. Intentar desde el runtimeEnv (locals.runtime.env en Cloudflare)
+    // 2. Intentar desde import.meta.env (definidas en build-time o .env local)
+    // @ts-ignore
+    const url = runtimeEnv?.SUPABASE_URL || import.meta.env.SUPABASE_URL || '';
+    // @ts-ignore
+    const key = runtimeEnv?.SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY || '';
+    
+    return { url, key };
+}
 
 /**
- * Cliente estático (para desarrollo local o cuando las variables de meta.env funcionan)
+ * Cliente estático básico.
+ * NOTA: En Cloudflare SSR, estas variables pueden estar vacías si no se bajan en el build.
  */
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const { url: defaultUrl, key: defaultKey } = getKeys();
+export const supabase = createClient(defaultUrl, defaultKey);
 
 /**
  * Crea o devuelve un cliente de Supabase basado en el entorno disponible.
- * En Cloudflare Workers, es más fiable pasar el objeto 'env' de la plataforma.
+ * Esta es la forma recomendada de obtener el cliente en rutas API de Astro.
  */
-export async function getSafeEnv() {
-    try {
-        // @ts-ignore
-        const cfWorkers = await import('cloudflare:workers');
-        return cfWorkers.env;
-    } catch {
-        return undefined;
-    }
-}
-
 export function getClient(runtimeEnv?: any) {
-    const url = runtimeEnv?.SUPABASE_URL || supabaseUrl;
-    const key = runtimeEnv?.SUPABASE_ANON_KEY || supabaseAnonKey;
+    const { url, key } = getKeys(runtimeEnv);
     
     if (!url || !key) {
-        console.error('CRITICAL: Supabase credentials not found in any environment source');
-        // No lanzamos error aquí para evitar que el módulo falle al importar, 
-        // pero las llamadas posteriores fallarán con un mensaje claro.
+        console.error('CRITICAL: Supabase credentials not found. URL:', !!url, 'Key:', !!key);
     }
     
     return createClient(url, key);
@@ -40,8 +40,7 @@ export function getClient(runtimeEnv?: any) {
  * Crea un cliente con el token de acceso del usuario para operaciones con RLS.
  */
 export function getAuthenticatedClient(accessToken: string, runtimeEnv?: any) {
-    const url = runtimeEnv?.SUPABASE_URL || supabaseUrl;
-    const key = runtimeEnv?.SUPABASE_ANON_KEY || supabaseAnonKey;
+    const { url, key } = getKeys(runtimeEnv);
 
     return createClient(url, key, {
         global: {

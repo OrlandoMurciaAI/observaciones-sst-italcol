@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getClient, getSafeEnv } from '../../lib/supabase';
+import { getClient } from '../../lib/supabase';
 
 export const POST: APIRoute = async ({ request, cookies, locals }) => {
   try {
@@ -13,11 +13,12 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
       return new Response(JSON.stringify({ success: false, message: "Email y contraseña requeridos" }), { status: 400 });
     }
 
-    const envData = await getSafeEnv();
-    const supabase = getClient(envData);
+    // @ts-ignore
+    const runtime = locals.runtime;
+    const supabase = getClient(runtime?.env);
     
-    console.log("Supabase URL provided:", envData?.SUPABASE_URL ? "Exists" : "MISSING!");
-    console.log("Actual URL used:", envData?.SUPABASE_URL || import.meta.env.SUPABASE_URL);
+    console.log("Supabase URL presence:", runtime?.env?.SUPABASE_URL ? "Exists in Runtime" : "MISSING in Runtime");
+    console.log("Supabase URL source:", runtime?.env?.SUPABASE_URL ? "Cloudflare Env" : "Process/Meta Env");
 
     const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -78,8 +79,9 @@ export const GET: APIRoute = async ({ cookies }) => {
 
 export const DELETE: APIRoute = async ({ cookies, locals }) => {
   try {
-    const envData = await getSafeEnv();
-    const supabase = getClient(envData);
+    // @ts-ignore
+    const runtime = locals.runtime;
+    const supabase = getClient(runtime?.env);
     await supabase.auth.signOut();
   } catch (e) {
     // Si falla el sign out en el servidor, igualmente borramos las cookies localmente
