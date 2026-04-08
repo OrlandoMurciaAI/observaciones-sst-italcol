@@ -14,8 +14,16 @@
     let searchTerm = $state('');
     
     // Filters
-    let startDate = $state(dayjs().format('YYYY-MM-DD'));
+    let startDate = $state(dayjs().subtract(30, 'days').format('YYYY-MM-DD'));
     let endDate = $state(dayjs().format('YYYY-MM-DD'));
+    let filterPlant = $state('');
+    let filterObserver = $state('');
+    let filterTask = $state('');
+
+    // Derived options for filters
+    let plants = $derived([...new Set(observations.map(o => o.plant))].sort());
+    let observers = $derived([...new Set(observations.map(o => o.observer))].sort());
+    let tasks = $derived([...new Set(observations.map(o => o.task))].sort());
     
     // UI State
     let editingObs = $state(null);
@@ -46,19 +54,24 @@
     // Reactive fetch when dates change
     $effect(() => {
         if (startDate && endDate) {
-            // We call it via a timeout or just once to avoid infinite loops if loadObservations updates something reactive
-            // But here it should be fine as it only updates 'observations' and 'loading'
             loadObservations();
         }
     });
 
-    // Filtered list (client-side search)
+    // Filtered list (client-side filters)
     let filteredObservations = $derived(
-        observations.filter(obs => 
-            obs.plant?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            obs.observer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            obs.task?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+        observations.filter(obs => {
+            const matchesSearch = !searchTerm || 
+                obs.plant?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                obs.observer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                obs.task?.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            const matchesPlant = !filterPlant || obs.plant === filterPlant;
+            const matchesObserver = !filterObserver || obs.observer === filterObserver;
+            const matchesTask = !filterTask || obs.task === filterTask;
+
+            return matchesSearch && matchesPlant && matchesObserver && matchesTask;
+        })
     );
 
     // Actions
@@ -159,12 +172,37 @@
                 <label><Calendar size={14} /> Fecha Fin</label>
                 <input type="date" bind:value={endDate} />
             </div>
+            
+            <div class="filter-field">
+                <label><Filter size={14} /> Planta</label>
+                <select bind:value={filterPlant}>
+                    <option value="">Todas las plantas</option>
+                    {#each plants as plant}<option value={plant}>{plant}</option>{/each}
+                </select>
+            </div>
+
+            <div class="filter-field">
+                <label><Filter size={14} /> Observador</label>
+                <select bind:value={filterObserver}>
+                    <option value="">Todos los observadores</option>
+                    {#each observers as obs}<option value={obs}>{obs}</option>{/each}
+                </select>
+            </div>
+
+            <div class="filter-field">
+                <label><Filter size={14} /> Tarea</label>
+                <select bind:value={filterTask}>
+                    <option value="">Todas las tareas</option>
+                    {#each tasks as task}<option value={task}>{task}</option>{/each}
+                </select>
+            </div>
+
             <div class="filter-field search-box">
                 <label><Search size={14} /> Búsqueda Rápida</label>
                 <div class="search-input-wrapper">
                     <input 
                         type="text" 
-                        placeholder="Planta, observador o tarea..." 
+                        placeholder="Buscar texto..." 
                         bind:value={searchTerm}
                     />
                 </div>
@@ -186,8 +224,7 @@
     {:else if observations.length === 0}
         <div class="empty-state text-center">
             <Info size={48} class="mx-auto mb-md opacity-20" />
-            <p>No se encontraron registros para el <b>{dayjs(startDate).format('DD/MM/YYYY')}</b>.</p>
-            <p class="text-xs mt-sm">Intenta ampliar el rango de fechas para ver más información.</p>
+            <p>No se encontraron registros para el rango seleccionado.</p>
         </div>
     {:else}
         <!-- Desktop Table View -->
@@ -232,35 +269,6 @@
                     {/each}
                 </tbody>
             </table>
-        </div>
-
-        <!-- Mobile Card View -->
-        <div class="mobile-view">
-            {#each filteredObservations as obs}
-                <div class="mobile-card {getRiskLevel(obs.responses)} shadow-sm">
-                    <div class="card-top flex justify-between">
-                        <span class="tag">{dayjs(obs.timestamp).format('DD MMM, HH:mm')}</span>
-                        <span class="status-pill {getRiskLevel(obs.responses)}">
-                            {getRiskLevel(obs.responses) === 'risk' ? 'Riesgo' : 'Seguro'}
-                        </span>
-                    </div>
-                    <div class="card-mid">
-                        <h4 class="m-0">{obs.plant}</h4>
-                        <div class="details-list mt-sm">
-                            <div class="detail-item"><strong>Observador:</strong> {obs.observer}</div>
-                            <div class="detail-item"><strong>Tarea:</strong> {obs.task}</div>
-                        </div>
-                    </div>
-                    <div class="card-bottom flex gap-sm mt-md">
-                        <button class="btn-card flex-1 edit" onclick={() => openEditModal(obs)}>
-                            <Edit3 size={14}/> Editar
-                        </button>
-                        <button class="btn-card flex-1 delete" onclick={() => deleteObservation(obs._id)}>
-                            <Trash2 size={14}/> Borrar
-                        </button>
-                    </div>
-                </div>
-            {/each}
         </div>
     {/if}
 </div>
@@ -431,7 +439,7 @@
         text-transform: uppercase;
     }
 
-    .filter-field input {
+    .filter-field input, .filter-field select {
         width: 100%;
         padding: 0.75rem 1rem;
         border: 1.5px solid var(--sst-border);
@@ -439,9 +447,10 @@
         font-size: 0.9rem;
         transition: border-color 0.2s, box-shadow 0.2s;
         font-family: inherit;
+        background: white;
     }
     
-    .filter-field input:focus {
+    .filter-field input:focus, .filter-field select:focus {
         border-color: var(--sst-accent);
         outline: none;
         box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.1);

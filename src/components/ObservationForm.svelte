@@ -26,8 +26,8 @@
   // Fetch suggestions when plant changes
   $effect(() => {
     const fetchSuggestions = async () => {
-        if (formState.planta) {
-            const data = await getMetadataSuggestions(formState.planta);
+        if (formState.plant) {
+            const data = await getMetadataSuggestions(formState.plant);
             if (data) suggestions = data;
         }
     };
@@ -84,7 +84,7 @@
     <div class="row flex gap-md wrap">
       <div class="field flex-1">
         <label for="planta">Planta / Bodega:</label>
-        <select id="planta" bind:value={formState.planta} required>
+        <select id="planta" bind:value={formState.plant} required>
             <option value="" disabled selected>Seleccione planta...</option>
             <option value="Planta Palermo">Planta Palermo</option>
             <option value="Planta Sabaneta">Planta Sabaneta</option>
@@ -101,11 +101,11 @@
     <div class="row flex gap-md wrap">
       <div class="field flex-1">
         <label for="observador">Observador:</label>
-        <SmartInput id="observador" placeholder="Nombre completo" bind:value={formState.observador} options={suggestions.observers} />
+        <SmartInput id="observador" placeholder="Nombre completo" bind:value={formState.observer} options={suggestions.observers} />
       </div>
       <div class="field flex-1">
         <label for="tarea">Tarea Observada:</label>
-        <SmartInput id="tarea" placeholder="Ej: Cargue de bultos" bind:value={formState.tarea} options={suggestions.tasks} />
+        <SmartInput id="tarea" placeholder="Ej: Cargue de bultos" bind:value={formState.task} options={suggestions.tasks} />
       </div>
     </div>
   </section>
@@ -160,11 +160,11 @@
             <div class="summary-details">
                 <div class="summary-row">
                     <span class="label">Tarea:</span>
-                    <span class="value">{formState.tarea}</span>
+                    <span class="value">{formState.task}</span>
                 </div>
                 <div class="summary-row">
                     <span class="label">Observador:</span>
-                    <span class="value">{formState.observador}</span>
+                    <span class="value">{formState.observer}</span>
                 </div>
                 <div class="summary-stats">
                     <div class="stat-pills">

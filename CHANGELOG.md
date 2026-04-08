@@ -2,6 +2,19 @@
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
+## [1.4.0] - 2026-04-08
+### Añadido
+- **Filtros de Gestión Avanzados**: Incorporación de selectores dinámicos para Planta, Observador y Tarea en la tabla de registros.
+- **Rango Inteligente**: Carga automática del último mes de datos al iniciar el Dashboard y la Tabla de observaciones.
+
+### Cambiado
+- **Normalización de Esquema de Datos**: Transición completa de la nomenclatura interna a inglés (`plant`, `task`, `observer`, `responses`) para total consistencia con la base de datos Supabase.
+- **Migración a Svelte 5 Runes**: Refactorización del Dashboard y la Tabla de Observaciones para utilizar reactividad nativa con `$state`, `$derived` y `$effect`.
+- **Optimización de Interfaz**: Eliminación de vistas redundantes en dispositivos móviles para una navegación más fluida.
+
+### Corregido
+- **Bug de Dashboard Vacío**: Resolución del problema de mapeo de datos que impedía la visualización de gráficos tras la migración.
+
 ## [1.3.0] - 2026-04-07
 ### Añadido
 - **Migración a Supabase (PostgreSQL)**: Reemplazo total de la infraestructura de backend para mayor estabilidad y seguridad.

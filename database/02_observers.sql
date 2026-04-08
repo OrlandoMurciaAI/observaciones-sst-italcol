@@ -16,7 +16,19 @@ CREATE INDEX IF NOT EXISTS idx_observers_plant ON observers(plant);
 ALTER TABLE observers ENABLE ROW LEVEL SECURITY;
 
 -- Políticas
--- El público puede leer para el autocompletado si fuese necesario
-CREATE POLICY "Public Read Observers" ON observers FOR SELECT TO anon USING (true);
--- Solo trabajadores registrados pueden añadir nuevos nombres
-CREATE POLICY "Admin Full Observers" ON observers FOR ALL TO authenticated USING (true);
+-- 1. Acceso total solo para Administradores Autenticados
+DROP POLICY IF EXISTS "Admin Full Observers" ON observers;
+DROP POLICY IF EXISTS "Public View Observers" ON observers;
+
+CREATE POLICY "Admin Full Observers" ON observers 
+    FOR ALL 
+    TO authenticated 
+    USING (true) 
+    WITH CHECK (true);
+
+-- Permisos base
+GRANT ALL ON TABLE observers TO authenticated;
+GRANT ALL ON TABLE observers TO service_role;
+
+
+

@@ -1,11 +1,11 @@
 const SESSION_KEY = 'sst_current_session';
 
 export class ObservationFormState {
-    planta = $state('Planta Palermo');
-    tarea = $state('');
-    observador = $state('');
+    plant = $state('Planta Palermo');
+    task = $state('');
+    observer = $state('');
     fecha = $state(new Date().toISOString().split('T')[0]);
-    respuestas = $state<Record<number, {
+    responses = $state<Record<number, {
         estado: 'seguro' | 'riesgoso' | 'no-aplica',
         motivo?: string,
         clasificacion?: 'A' | 'B' | 'C'
@@ -30,11 +30,11 @@ export class ObservationFormState {
 
     toJSON() {
         return {
-            planta: this.planta,
-            tarea: this.tarea,
-            observador: this.observador,
+            plant: this.plant,
+            task: this.task,
+            observer: this.observer,
             fecha: this.fecha,
-            respuestas: $state.snapshot(this.respuestas),
+            responses: $state.snapshot(this.responses),
             barrerasC: this.barrerasC,
             seguimiento: this.seguimiento,
             firma: this.firma
@@ -42,7 +42,7 @@ export class ObservationFormState {
     }
 
     stats = $derived.by(() => {
-        const resValues = Object.values(this.respuestas);
+        const resValues = Object.values(this.responses);
         const evaluated = resValues.filter(r => r.estado !== 'no-aplica');
         const total = evaluated.length;
         const seguros = evaluated.filter(r => r.estado === 'seguro').length;
@@ -51,9 +51,9 @@ export class ObservationFormState {
     });
 
     isValid() {
-        if (!this.tarea) return { valid: false, message: 'La tarea observada es obligatoria.' };
+        if (!this.task) return { valid: false, message: 'La tarea observada es obligatoria.' };
         
-        const resValues = Object.entries(this.respuestas);
+        const resValues = Object.entries(this.responses);
         for (const [id, res] of resValues) {
             if (res.estado === 'riesgoso') {
                 if (!res.clasificacion) {
@@ -78,11 +78,11 @@ export class ObservationFormState {
         if (stored) {
             try {
                 const data = JSON.parse(stored);
-                this.planta = data.planta || 'Planta Palermo';
-                this.tarea = data.tarea || '';
-                this.observador = data.observador || '';
+                this.plant = data.plant || data.planta || 'Planta Palermo';
+                this.task = data.task || data.tarea || '';
+                this.observer = data.observer || data.observador || '';
                 this.fecha = data.fecha || new Date().toISOString().split('T')[0];
-                this.respuestas = data.respuestas || {};
+                this.responses = data.responses || data.respuestas || {};
                 this.barrerasC = data.barrerasC || '';
                 this.seguimiento = data.seguimiento || '';
                 this.firma = data.firma || '';
@@ -93,17 +93,17 @@ export class ObservationFormState {
     }
 
     resetInternal() {
-        this.tarea = '';
+        this.task = '';
         this.barrerasC = '';
         this.seguimiento = '';
         this.firma = '';
         
         // Poblamos con N/A por defecto
-        const defaultRespuestas: Record<number, any> = {};
+        const defaultResponses: Record<number, any> = {};
         for(let i=1; i<=17; i++) {
-            defaultRespuestas[i] = { estado: 'no-aplica' };
+            defaultResponses[i] = { estado: 'no-aplica' };
         }
-        this.respuestas = defaultRespuestas;
+        this.responses = defaultResponses;
     }
 
     reset() {

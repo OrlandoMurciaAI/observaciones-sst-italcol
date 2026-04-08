@@ -8,23 +8,23 @@
 
     Chart.register(...registerables);
 
-    let observations = [];
-    let filteredObservations = [];
-    let loading = true;
+    let observations = $state([]);
+    let filteredObservations = $state([]);
+    let loading = $state(true);
 
     // Filters
-    let filterPlant = '';
-    let filterObserver = '';
-    let filterTask = '';
-    let filterStartDate = dayjs().subtract(1, 'month').format('YYYY-MM-DD');
-    let filterEndDate = dayjs().format('YYYY-MM-DD');
+    let filterPlant = $state('');
+    let filterObserver = $state('');
+    let filterTask = $state('');
+    let filterStartDate = $state(dayjs().subtract(1, 'month').format('YYYY-MM-DD'));
+    let filterEndDate = $state(dayjs().format('YYYY-MM-DD'));
 
-    let plants = [];
-    let observers = [];
-    let tasks = [];
+    let plants = $state([]);
+    let observers = $state([]);
+    let tasks = $state([]);
 
     // Insights State
-    let stats = {
+    let stats = $state({
         total: 0,
         riskyObs: 0,
         riskyPercent: 0,
@@ -34,15 +34,15 @@
         topRiskyTasks: [],
         topRiskyPlants: [],
         commonReasons: []
-    };
+    });
 
-    let componentStats = [];
+    let componentStats = $state([]);
 
     // Charts
     let timeChart, componentChart, controlChart, plantChart;
     let timeCanvas, componentCanvas, controlCanvas, plantCanvas;
 
-    let expandedComponentId = null;
+    let expandedComponentId = $state(null);
 
     onMount(async () => {
         await fetchData();
@@ -51,12 +51,16 @@
     async function fetchData() {
         loading = true;
         try {
-            const res = await fetch('/api/observations');
+            const url = new URL('/api/observations', window.location.origin);
+            if (filterStartDate) url.searchParams.append('from', filterStartDate);
+            if (filterEndDate) url.searchParams.append('to', filterEndDate);
+            
+            const res = await fetch(url.toString());
             observations = await res.json();
             
-            plants = [...new Set(observations.map(o => o.planta))].sort();
-            observers = [...new Set(observations.map(o => o.observador))].sort();
-            tasks = [...new Set(observations.map(o => o.tarea))].sort();
+            plants = [...new Set(observations.map(o => o.plant))].sort();
+            observers = [...new Set(observations.map(o => o.observer))].sort();
+            tasks = [...new Set(observations.map(o => o.task))].sort();
 
             applyFilters();
         } catch (e) {
@@ -68,9 +72,9 @@
 
     function applyFilters() {
         filteredObservations = observations.filter(obs => {
-            const matchPlant = !filterPlant || obs.planta === filterPlant;
-            const matchObserver = !filterObserver || obs.observador === filterObserver;
-            const matchTask = !filterTask || obs.tarea === filterTask;
+            const matchPlant = !filterPlant || obs.plant === filterPlant;
+            const matchObserver = !filterObserver || obs.observer === filterObserver;
+            const matchTask = !filterTask || obs.task === filterTask;
             const matchDate = (!filterStartDate || obs.fecha >= filterStartDate) && 
                               (!filterEndDate || obs.fecha <= filterEndDate);
             return matchPlant && matchObserver && matchTask && matchDate;
@@ -104,7 +108,7 @@
             let isObsRisky = false;
             let isObsOutOfControl = false;
 
-            Object.entries(obs.respuestas || {}).forEach(([id, r]: [string, any]) => {
+            Object.entries(obs.responses || {}).forEach(([id, r]: [string, any]) => {
                 const comp = compStatsMap.find(c => c.id === parseInt(id));
                 if (!comp || r.estado === 'no-aplica') return;
 
@@ -127,8 +131,8 @@
 
             if (isObsRisky) {
                 riskyObsCount++;
-                taskRisk[obs.tarea] = (taskRisk[obs.tarea] || 0) + 1;
-                plantRisk[obs.planta] = (plantRisk[obs.planta] || 0) + 1;
+                taskRisk[obs.task] = (taskRisk[obs.task] || 0) + 1;
+                plantRisk[obs.plant] = (plantRisk[obs.plant] || 0) + 1;
             }
 
             if (isObsOutOfControl) {
@@ -156,13 +160,13 @@
     function getComponentComments(compId) {
         const comments = [];
         filteredObservations.forEach(obs => {
-            const resp = (obs.respuestas || {})[compId];
+            const resp = (obs.responses || {})[compId];
             if (resp?.estado === 'riesgoso' && resp?.motivo) {
                 comments.push({
                     text: resp.motivo,
                     date: obs.fecha,
-                    plant: obs.planta,
-                    task: obs.tarea
+                    plant: obs.plant,
+                    task: obs.task
                 });
             }
         });
@@ -198,7 +202,7 @@
         const riskyByDate = {};
         filteredObservations.forEach(obs => {
             obsByDate[obs.fecha] = (obsByDate[obs.fecha] || 0) + 1;
-            const isRisky = Object.values(obs.respuestas || {}).some((r: any) => r.estado === 'riesgoso');
+            const isRisky = Object.values(obs.responses || {}).some((r: any) => r.estado === 'riesgoso');
             if (isRisky) riskyByDate[obs.fecha] = (riskyByDate[obs.fecha] || 0) + 1;
         });
         const labels = Object.keys(obsByDate).sort();
@@ -251,7 +255,7 @@
                 labels: plants,
                 datasets: [{
                     label: 'Registros Riesgosos',
-                    data: plants.map(p => filteredObservations.filter(o => o.planta === p && Object.values(o.respuestas || {}).some((r: any) => r.estado === 'riesgoso')).length),
+                    data: plants.map(p => filteredObservations.filter(o => o.plant === p && Object.values(o.responses || {}).some((r: any) => r.estado === 'riesgoso')).length),
                     backgroundColor: '#ff7a00',
                     borderRadius: 6
                 }]
@@ -288,8 +292,8 @@
                 <div class="field">
                     <label>Rango de Tiempo</label>
                     <div class="flex gap-sm">
-                        <input type="date" bind:value={filterStartDate} on:change={applyFilters} />
-                        <input type="date" bind:value={filterEndDate} on:change={applyFilters} />
+                        <input type="date" bind:value={filterStartDate} on:change={() => { fetchData(); }} />
+                        <input type="date" bind:value={filterEndDate} on:change={() => { fetchData(); }} />
                     </div>
                 </div>
                 <div class="field">
@@ -454,7 +458,7 @@
                                                     {#each getComponentComments(comp.id) as comment}
                                                         <div class="comment-item">
                                                             <p>"{comment.text}"</p>
-                                                            <small>{comment.date} - {comment.planta} ({comment.task})</small>
+                                                            <small>{comment.date} - {comment.plant} ({comment.task})</small>
                                                         </div>
                                                     {:else}
                                                         <p class="no-data">No hay comentarios registrados.</p>

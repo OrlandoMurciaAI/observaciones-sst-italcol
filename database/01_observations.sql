@@ -26,5 +26,17 @@ CREATE INDEX IF NOT EXISTS idx_observations_fecha ON observations(fecha);
 ALTER TABLE observations ENABLE ROW LEVEL SECURITY;
 
 -- Políticas
-CREATE POLICY "Admin All Access" ON observations FOR ALL TO authenticated USING (true);
--- Nota: Se ha eliminado el acceso anónimo para inserción por requerimiento de seguridad.
+-- 1. Acceso total para Administradores (Autenticados)
+DROP POLICY IF EXISTS "Admin All Access" ON observations;
+DROP POLICY IF EXISTS "Enable Insert for Anon" ON observations;
+
+CREATE POLICY "Admin All Access" ON observations 
+    FOR ALL 
+    TO authenticated 
+    USING (true) 
+    WITH CHECK (true);
+
+-- Permisos base en el esquema público (por seguridad)
+GRANT ALL ON TABLE observations TO authenticated;
+GRANT ALL ON TABLE observations TO service_role;
+
