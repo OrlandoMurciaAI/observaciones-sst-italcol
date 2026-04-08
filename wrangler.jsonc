@@ -18,5 +18,9 @@
     ],
     "observability": {
         "enabled": true
+    },
+    "vars": {
+        "SUPABASE_URL": "https://gjxyidtjueboefhybddd.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqeHlpZHRqdWVib2VmaHliZGRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTg4NjksImV4cCI6MjA5MTE3NDg2OX0.LUqBdr8Bw_ARkFi8ZoHKForCoNFiK5dY9lU-63CNheY",
     }
 }

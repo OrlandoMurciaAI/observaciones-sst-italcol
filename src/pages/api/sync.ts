@@ -29,9 +29,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
       };
     });
 
-    // @ts-ignore
-    const envData = locals.runtime?.env;
-    const client = getAuthenticatedClient(accessToken, envData);
+    const client = await getAuthenticatedClient(accessToken);
     
     const { data, error } = await client
       .from('observations')
