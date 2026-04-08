@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getClient, getAuthenticatedClient, getSafeEnv } from '../../lib/supabase';
+import { getClient, getAuthenticatedClient } from '../../lib/supabase';
 
 export const GET: APIRoute = async ({ request, cookies, locals }) => {
   const sessionToken = cookies.get('sst_session')?.value;
@@ -9,7 +9,8 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
   const plant = url.searchParams.get('plant') || "";
 
   try {
-    const envData = await getSafeEnv();
+    // @ts-ignore
+    const envData = locals.runtime?.env;
     const client = getAuthenticatedClient(sessionToken, envData);
     
     // Observers by plant
@@ -47,7 +48,8 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
 
     const table = type === 'observer' ? "observers" : "tasks";
     
-    const envData = await getSafeEnv();
+    // @ts-ignore
+    const envData = locals.runtime?.env;
     const client = getAuthenticatedClient(sessionToken, envData);
 
     // Upsert to avoid duplicates

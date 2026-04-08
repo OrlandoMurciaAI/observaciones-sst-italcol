@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getClient, getAuthenticatedClient, getSafeEnv } from '../../lib/supabase';
+import { getClient, getAuthenticatedClient } from '../../lib/supabase';
 import dayjs from 'dayjs';
 
 export const GET: APIRoute = async ({ cookies, url, locals }) => {
@@ -12,7 +12,8 @@ export const GET: APIRoute = async ({ cookies, url, locals }) => {
   const endDate = url.searchParams.get('to');
 
   try {
-    const envData = await getSafeEnv();
+    // @ts-ignore
+    const envData = locals.runtime?.env;
     const client = getAuthenticatedClient(accessToken, envData);
     
     let query = client
@@ -77,7 +78,8 @@ export const PATCH: APIRoute = async ({ request, cookies, locals }) => {
         updated_at: new Date().toISOString() 
     };
 
-    const envData = await getSafeEnv();
+    // @ts-ignore
+    const envData = locals.runtime?.env;
     const client = getAuthenticatedClient(accessToken, envData);
     
     const { error } = await client
@@ -104,7 +106,8 @@ export const DELETE: APIRoute = async ({ request, cookies, locals }) => {
     const { id } = await request.json();
     if (!id) return new Response(JSON.stringify({ error: "Missing ID" }), { status: 400 });
 
-    const envData = await getSafeEnv();
+    // @ts-ignore
+    const envData = locals.runtime?.env;
     const client = getAuthenticatedClient(accessToken, envData);
     
     const { error } = await client
