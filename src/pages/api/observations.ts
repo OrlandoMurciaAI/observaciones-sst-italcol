@@ -12,9 +12,7 @@ export const GET: APIRoute = async ({ cookies, url, locals }) => {
   const endDate = url.searchParams.get('to');
 
   try {
-    // @ts-ignore
-    const envData = locals.runtime?.env;
-    const client = getAuthenticatedClient(accessToken, envData);
+    const client = await getAuthenticatedClient(accessToken);
     
     let query = client
       .from('observations')
@@ -78,9 +76,7 @@ export const PATCH: APIRoute = async ({ request, cookies, locals }) => {
         updated_at: new Date().toISOString() 
     };
 
-    // @ts-ignore
-    const envData = locals.runtime?.env;
-    const client = getAuthenticatedClient(accessToken, envData);
+    const client = await getAuthenticatedClient(accessToken);
     
     const { error } = await client
       .from('observations')
@@ -106,9 +102,7 @@ export const DELETE: APIRoute = async ({ request, cookies, locals }) => {
     const { id } = await request.json();
     if (!id) return new Response(JSON.stringify({ error: "Missing ID" }), { status: 400 });
 
-    // @ts-ignore
-    const envData = locals.runtime?.env;
-    const client = getAuthenticatedClient(accessToken, envData);
+    const client = await getAuthenticatedClient(accessToken);
     
     const { error } = await client
       .from('observations')

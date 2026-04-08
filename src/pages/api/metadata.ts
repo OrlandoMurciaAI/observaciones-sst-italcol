@@ -9,9 +9,7 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
   const plant = url.searchParams.get('plant') || "";
 
   try {
-    // @ts-ignore
-    const envData = locals.runtime?.env;
-    const client = getAuthenticatedClient(sessionToken, envData);
+    const client = await getAuthenticatedClient(sessionToken);
     
     // Observers by plant
     const { data: observers, error: obsError } = await client
@@ -48,9 +46,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
 
     const table = type === 'observer' ? "observers" : "tasks";
     
-    // @ts-ignore
-    const envData = locals.runtime?.env;
-    const client = getAuthenticatedClient(sessionToken, envData);
+    const client = await getAuthenticatedClient(sessionToken);
 
     // Upsert to avoid duplicates
     const { error } = await client
